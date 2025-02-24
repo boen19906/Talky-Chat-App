@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, arrayUnion,arrayRemove, query, where,collection,getDocs,setDoc, serverTimestamp, onSnapshot} from "firebase/firestore";
@@ -17,6 +17,7 @@ const HomePage = () => {
   const [showRemoveFriendModal, setShowRemoveFriendModal] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null); // Track which friend to remove
   const [showLogOutModal, setShowLogOutModal] = useState(false);
+  const messagesEndRef = useRef(null); 
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -267,12 +268,22 @@ const HomePage = () => {
     }
   };
 
+  const handleImageClick = () => {
+    setSelectedFriend(null);
+  }
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+}, [messages]); // Dependency: messages array
+
   return (
     <div className="home-container">
       {/* Friends List */}
       
       <div className="friends-list">
-        <img src="logo.png" alt="Logo" className="logo" />
+        <img src="logo.png" alt="Logo" className="logo" onClick={handleImageClick}/>
         <h2>Friends</h2>
         <button className="add-friend-button" onClick={handleAddFriend}>
           Add Friend
@@ -317,6 +328,7 @@ const HomePage = () => {
                     </span>
                     </div>
                 ))}
+                <div ref={messagesEndRef}/>
             </div>
             <form onSubmit={handleSendMessage} className="chat-input">
               <input

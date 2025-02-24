@@ -64,6 +64,8 @@
     border-bottom: 1px solid #ddd;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    max-height: 100vh;
   }
 
   /* Base Message Style */
