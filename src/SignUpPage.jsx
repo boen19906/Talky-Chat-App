@@ -23,6 +23,14 @@ const SignUpPage = () => {
     return "";
   };
 
+  // Function to validate username - no spaces allowed
+  const validateUsername = (username) => {
+    if (username.includes(" ")) {
+      return "Username cannot contain spaces.";
+    }
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -30,6 +38,13 @@ const SignUpPage = () => {
     setPasswordError("");
 
     try {
+      // Validate username format first (no spaces)
+      const usernameValidationError = validateUsername(username);
+      if (usernameValidationError) {
+        setUsernameError(usernameValidationError);
+        return; // Stop execution if username format is invalid
+      }
+
       // Step 1: Check if the username already exists
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("username", "==", username));
@@ -71,8 +86,28 @@ const SignUpPage = () => {
     }
   };
 
+  // Validate username on input change
+  const handleUsernameChange = (e) => {
+    const newUsername = e.target.value;
+    setUsername(newUsername);
+    
+    // Clear previous error when user starts typing again
+    if (usernameError) {
+      setUsernameError("");
+    }
+    
+    // Optionally provide real-time validation feedback
+    if (newUsername.includes(" ")) {
+      setUsernameError("Username cannot contain spaces.");
+    }
+  };
+
   return (
     <div className="signup-container">
+      <button className="back" onClick={() => navigate("/signin")}>
+            Back
+      </button>
+      <img src="logo.png" alt="logo" className="logo" />
       <h1>Sign Up</h1>
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
@@ -82,8 +117,8 @@ const SignUpPage = () => {
             type="text"
             id="username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
+            onChange={handleUsernameChange}
+            placeholder="Enter your username (no spaces)"
             required
           />
           {usernameError && <p className="input-error">{usernameError}</p>}

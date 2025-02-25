@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import SignInPage from "./SignInPage";
 import HomePage from "./HomePage";
+import SignUpPage from "./SignUpPage";
 import "./App.css";
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
           />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/home" element={<HomePage />} />
+          <Route path="/signup" element={<SignUpPage/>}/>
         </Routes>
       </div>
     </Router>

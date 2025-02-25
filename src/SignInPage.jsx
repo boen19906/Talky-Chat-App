@@ -14,6 +14,12 @@ const SignInPage = () => {
     e.preventDefault();
     setError("");
 
+     // Manual validation
+     if (email=="" || password=="") {
+      setError("All fields must be filled out.");
+      return;
+    }
+
     try {
       // Step 1: Sign in the user with Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(
@@ -33,7 +39,8 @@ const SignInPage = () => {
 
   return (
     <div className="signin-container">
-      <img src="logo.png" alt="Logo" className="logo" />
+      
+      <img src="logo.png" alt="logo" className="logo" />
       <h1>Sign In</h1>
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
@@ -45,7 +52,6 @@ const SignInPage = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            required
           />
 
           <label htmlFor="password">Password</label>
@@ -55,10 +61,10 @@ const SignInPage = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            required
           />
         </div>
-        <button type="submit">Sign In</button>
+        <button className="signin" onClick={handleSubmit}>Sign In</button>
+        <button className="signup" onClick={() => navigate("/signup")}>Sign Up</button>
       </form>
     </div>
   );
