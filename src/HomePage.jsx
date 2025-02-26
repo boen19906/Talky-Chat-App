@@ -17,48 +17,68 @@ const HomePage = () => {
   const [showRemoveFriendModal, setShowRemoveFriendModal] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
   const [showlogoutModal, setShowlogoutModal] = useState(false);
-  const [newMessages, setNewMessages] = useState(new Set());
+  const [unreadMessages, setUnreadMessages] = useState({});
   const [error, setError] = useState("");
+  const [isNewLogin, setIsNewLogin] = useState(true);
+  const [newFriendRequest, setNewFriendRequest] = useState(false);
+  const [friendRequested, setFriendRequested] = useState("");
+  const [friendRequestedUsername, setFriendRequestedUsername] = useState("");
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
   const currentConversationIdRef = useRef(null); // Use ref to track current conversation ID
 
   const navigate = useNavigate();
 
+  //new login 
   useEffect(() => {
-    const fetchFriends = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
-  
-          if (userDoc.exists()) {
-            const friendsArray = userDoc.data().friends || [];
-            setFriends(friendsArray);
-          } else {
-            console.error("User document not found.");
-          }
-        } catch (error) {
-          console.error("Error fetching friends array:", error);
-        }
-      }
-    };
-  
-    fetchFriends();
+    // Reset 'isNewLogin' after 3 seconds (or another event like opening a chat)
+    const timer = setTimeout(() => setIsNewLogin(false), 3000);
+    return () => clearTimeout(timer); // Cleanup on unmount
   }, []);
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+  
+    const userDocRef = doc(db, "users", user.uid);
+  
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setFriends(docSnap.data().friends || []);
+      } else {
+        console.error("User document not found.");
+      }
+    });
+  
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, []);
+
+  const getUsernameById = async (userId) => {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        return userDoc.data().username || null;
+      } else {
+        console.error("User document not found.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching username:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (friends.length > 0) {
       const fetchFriendUsernames = async () => {
         const usernames = {};
         for (const friendId of friends) {
-          const friendDocRef = doc(db, "users", friendId);
-          const friendDoc = await getDoc(friendDocRef);
-          if (friendDoc.exists()) {
-            usernames[friendId] = friendDoc.data().username;
+          const username = await getUsernameById(friendId);
+          if (username) {
+            usernames[friendId] = username;
           } else {
-            console.error("Friend document not found for ID:", friendId);
+            console.error("Username not found for ID:", friendId);
           }
         }
         setFriendUsernames(usernames);
@@ -77,6 +97,53 @@ const HomePage = () => {
       currentConversationIdRef.current = null;
     }
   }, [selectedFriend]);
+
+  // Mark messages as viewed when a friend is selected
+  useEffect(() => {
+    const markMessagesAsViewed = async () => {
+      const user = auth.currentUser;
+      if (user && selectedFriend) {
+        const conversationId = [user.uid, selectedFriend].sort().join("_");
+        const conversationRef = doc(db, "messages", conversationId);
+        
+        try {
+          const conversationDoc = await getDoc(conversationRef);
+          
+          if (conversationDoc.exists()) {
+            const textsArray = conversationDoc.data().texts || [];
+            let updated = false;
+            
+            // Create a new array with viewed status updated
+            const updatedTexts = textsArray.map(msg => {
+              if (msg.sender === selectedFriend && !msg.viewed) {
+                updated = true;
+                return { ...msg, viewed: true };
+              }
+              return msg;
+            });
+            
+            // Only update if there were unread messages
+            if (updated) {
+              await updateDoc(conversationRef, {
+                texts: updatedTexts
+              });
+              
+              // Update local unread messages state
+              setUnreadMessages(prev => {
+                const newState = { ...prev };
+                newState[selectedFriend] = 0;
+                return newState;
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error marking messages as viewed:", error);
+        }
+      }
+    };
+    
+    markMessagesAsViewed();
+  }, [selectedFriend, messages]); // Add messages as a dependency
 
   // useEffect to fetch messages for the selectedFriend
   useEffect(() => {
@@ -119,6 +186,7 @@ const HomePage = () => {
                     text: msg.text,
                     sender: msg.sender === user.uid ? "You" : friendUsernames[msg.sender] || "Unknown",
                     timestamp: timestamp,
+                    viewed: msg.viewed
                   };
                 });
 
@@ -143,38 +211,49 @@ const HomePage = () => {
     return () => unsubscribe();
   }, [selectedFriend, friendUsernames]);
 
-  // useEffect to track new messages from unselected friends
+  // useEffect to track unread messages from non-selected friends
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
-
-    const messagesCollectionRef = collection(db, "messages");
-    const userConversationsQuery = query(
-      messagesCollectionRef,
-      where("participants", "array-contains", user.uid)
-    );
-
-    const unsubscribe = onSnapshot(userConversationsQuery, (querySnapshot) => {
-      querySnapshot.docChanges().forEach((change) => {
-        if (change.type === "modified") {
-          const participants = change.doc.data().participants;
-          const otherParticipant = participants.find((participant) => participant !== user.uid);
-
-          // Only mark as new if it's not the currently selected conversation
-          if (otherParticipant && otherParticipant !== selectedFriend) {
-            setNewMessages((prev) => new Set(prev).add(otherParticipant));
-            
-            if (audioRef.current) {
-                audioRef.current.play().catch((err) => console.error("Error playing sound:", err));
-            }
-        }
-        
+  
+    // Set up listeners for all conversations
+    const unsubscribeMap = {};
+  
+    friends.forEach(friendId => {
+      // Skip setting up listener for the selected friend
+      if (friendId === selectedFriend) {
+        return;
+      }
+  
+      const conversationId = [user.uid, friendId].sort().join("_");
+      const conversationRef = doc(db, "messages", conversationId);
+  
+      // Set up a real-time listener for each conversation (except selected friend)
+      const unsubscribe = onSnapshot(conversationRef, (doc) => {
+        if (doc.exists()) {
+          const texts = doc.data().texts || [];
+  
+          // Count unread messages (messages sent by the friend that haven't been viewed)
+          const unreadCount = texts.filter(msg => msg.sender === friendId && !msg.viewed).length;
+  
+          // Update the unread messages count for this friend
+          setUnreadMessages(prev => ({ ...prev, [friendId]: unreadCount }));
+  
+          // Play notification sound if there are new messages and it's not the selected friend
+          if (!isNewLogin && unreadCount > 0 && audioRef.current) {
+            audioRef.current.play().catch(err => console.error("Error playing sound:", err));
+          }
         }
       });
+  
+      unsubscribeMap[friendId] = unsubscribe;
     });
-
-    return () => unsubscribe();
-  }, [selectedFriend]);
+  
+    // Clean up listeners when component unmounts
+    return () => {
+      Object.values(unsubscribeMap).forEach(unsubscribe => unsubscribe());
+    };
+  }, [friends, selectedFriend]);
   
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -258,51 +337,141 @@ const HomePage = () => {
           const querySnapshot = await getDocs(q);
   
           if (querySnapshot.empty) {
-            // Show error in the modal
             setError("User not found. Please check the username and try again.");
             return;
           }
   
-          // Get the friend's user ID
+          // Get the friend's user ID and document reference
           const friendDoc = querySnapshot.docs[0];
           const friendId = friendDoc.id;
+          const friendDocRef = doc(db, "users", friendId);
   
-          // Add the friend's user ID to the current user's friends array
-          const userDocRef = doc(db, "users", user.uid);
-          await updateDoc(userDocRef, {
-            friends: arrayUnion(friendId),
+          // Check if already friends
+          if (friends.includes(friendId)) {
+            setError("You are already friends with this user.");
+            return;
+          }
+  
+          // Check if already sent a request
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          const userData = userDoc.data();
+          
+          if (userData.sentFriendRequests && userData.sentFriendRequests.includes(friendId)) {
+            setError("Friend request already sent.");
+            return;
+          }
+  
+          // Add request to the friend's friendRequests array
+          await updateDoc(friendDocRef, {
+            friendRequests: arrayUnion(user.uid)
           });
   
-          // Update local state
-          setFriends([...friends, friendId]);
+          // Add to current user's sentFriendRequests array
+          const userDocRef = doc(db, "users", user.uid);
+          await updateDoc(userDocRef, {
+            sentFriendRequests: arrayUnion(friendId)
+          });
+  
           setNewFriend("");
-          setError(null); // Clear any previous errors
+          setError(null);
           setShowAddFriendModal(false);
         }
       } catch (error) {
-        // Show error in the modal
-        setError(`Error adding friend: ${error.message}`);
-        console.error("Error adding friend:", error);
+        setError(`Error sending friend request: ${error.message}`);
+        console.error("Error sending friend request:", error);
       }
     }
   };
 
+  const handleFriendRequest = async (requesterId, action) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      const userDocRef = doc(db, "users", user.uid);
+      const requesterDocRef = doc(db, "users", requesterId);
+  
+      if (action === "accept") {
+        // Add each user to the other's friends list
+        await updateDoc(userDocRef, {
+          friends: arrayUnion(requesterId),
+          friendRequests: arrayRemove(requesterId)
+        });
+  
+        await updateDoc(requesterDocRef, {
+          friends: arrayUnion(user.uid),
+          sentFriendRequests: arrayRemove(user.uid)
+        });
+  
+        // Update local state
+        setFriends([...friends, requesterId]);
+      } else if (action === "decline") {
+        // Remove the request
+        await updateDoc(userDocRef, {
+          friendRequests: arrayRemove(requesterId)
+        });
+  
+        await updateDoc(requesterDocRef, {
+          sentFriendRequests: arrayRemove(user.uid)
+        });
+      }
+  
+      
+    } catch (error) {
+      console.error("Error handling friend request:", error);
+      setError(`Error handling friend request: ${error.message}`);
+    }
+  };
+
+  //hook to track friendRequests
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userDocRef = doc(db, "users", user.uid);
+
+    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        const currentRequests = data.friendRequests || [];
+
+        // Check if new friend requests were added
+        if (currentRequests.length > 0) {
+          setNewFriendRequest(true);
+        }
+
+        setFriendRequested(data.friendRequests[0]); // Update state with new requests
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, []); // Dependencies
+
   const handleRemoveFriend = async () => {
     try {
       const user = auth.currentUser;
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
+      if (!user) return;
   
-        // Remove the friend from Firestore
-        await updateDoc(userDocRef, {
-          friends: arrayRemove(friendToRemove),
+      const userDocRef = doc(db, "users", user.uid);
+      const friendDocRef = doc(db, "users", friendToRemove);
+  
+      // Remove the friend from the user's friends list
+      await updateDoc(userDocRef, {
+        friends: arrayRemove(friendToRemove),
+      });
+  
+      // Remove the user from the friend's friends list
+      const friendDoc = await getDoc(friendDocRef);
+      if (friendDoc.exists()) {
+        await updateDoc(friendDocRef, {
+          friends: arrayRemove(user.uid),
         });
-  
-        // Update the local state
-        setFriends(friends.filter((friend) => friend !== friendToRemove));
-        setSelectedFriend(null);
-        setShowRemoveFriendModal(false);
       }
+  
+      // Update the local state
+      setFriends(friends.filter((friend) => friend !== friendToRemove));
+      setSelectedFriend(null);
+      setShowRemoveFriendModal(false);
     } catch (error) {
       console.error("Error removing friend:", error);
     }
@@ -324,13 +493,34 @@ const HomePage = () => {
       setShowRemoveFriendModal(true);
     } else {
       setSelectedFriend(friendId);
-      setNewMessages((prev) => {
-        const updated = new Set(prev);
-        updated.delete(friendId);
-        return updated;
-      });
     }
   };
+
+  useEffect(() => {
+    const fetchFriendRequestUsername = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+  
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+  
+        if (userDoc.exists()) {
+          if (friendRequested) { 
+            // Fetch the username using the helper function
+            const username = await getUsernameById(friendRequested);
+            if (username) {
+              setFriendRequestedUsername(username);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching friend request username:", error);
+      }
+    };
+  
+    fetchFriendRequestUsername();
+  }, [friendRequested]);
 
   return (
     <div className="home-container">
@@ -351,7 +541,9 @@ const HomePage = () => {
               className={`friend-list-item ${selectedFriend === friendId ? "selected" : ""}`}
             >
               {friendUsernames[friendId] || "Loading..."}
-              {newMessages.has(friendId) && <div className="new-message-indicator" />}
+              {unreadMessages[friendId] > 0 && (
+                <div className="new-message-indicator">{unreadMessages[friendId]}</div>
+              )}
             </li>
           ))}
         </ul>
@@ -374,6 +566,11 @@ const HomePage = () => {
                   {msg.text}
                   <span className="timestamp">
                     {msg.timestamp?.toLocaleTimeString()}
+                    {msg.sender === "You" && (
+                      <span className="read-receipt">
+                        {msg.viewed ? " ✓✓" : " ✓"}
+                      </span>
+                    )}
                   </span>
                 </div>
               ))}
@@ -483,6 +680,30 @@ const HomePage = () => {
                 className="cancel-button"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Friend Request Modal */}
+      {newFriendRequest && friendRequested && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>You got a new Friend Request!</h3>
+            <p>{friendRequestedUsername} wants to be your friend.</p>
+            <div className="modal-buttons">
+              <button
+                onClick={() => handleFriendRequest(friendRequested, "accept")}
+                className="confirm-button"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => handleFriendRequest(friendRequested, "decline")}
+                className="cancel-button"
+              >
+                Decline
               </button>
             </div>
           </div>

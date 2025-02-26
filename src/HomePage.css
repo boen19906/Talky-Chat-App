@@ -9,7 +9,7 @@
 .logo {
     margin-top:3vh;
     width: 12vw;
-    height: 10vh;
+    height: 12vh;
     align-self: center;
     margin-top:5vh;
 
@@ -65,8 +65,8 @@
   position: absolute;
   top: 5px;
   right: 5px;
-  width: 10px;
-  height: 10px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background-color: red;
 }
