@@ -23,6 +23,10 @@ const HomePage = () => {
   const [newFriendRequest, setNewFriendRequest] = useState(false);
   const [friendRequested, setFriendRequested] = useState("");
   const [friendRequestedUsername, setFriendRequestedUsername] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
+  const [userUsername, setUserUsername] = useState("");
+  const [showDeleteMessageModal, setShowDeleteMessageModal] = useState(false);
+  const [deletedMessageIndex, setDeletedMessageIndex] = useState(0);
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
   const currentConversationIdRef = useRef(null); // Use ref to track current conversation ID
@@ -308,6 +312,47 @@ const HomePage = () => {
     }
   };
 
+  const handleDeleteMessage = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user || !selectedFriend) return;
+  
+      // Create a unique ID for the conversation
+      const conversationId = [user.uid, selectedFriend].sort().join("_");
+      
+      // Reference the conversation document
+      const conversationRef = doc(db, "messages", conversationId);
+      
+      // Get the current conversation data
+      const conversationDoc = await getDoc(conversationRef);
+      
+      if (conversationDoc.exists()) {
+        // Get the texts array from the document
+        const texts = conversationDoc.data().texts || [];
+        
+        // Check if the message exists and belongs to the current user
+        const messageToDelete = texts[deletedMessageIndex];
+        
+        if (messageToDelete && messageToDelete.sender === user.uid) {
+          // Remove the message from the array
+          texts.splice(deletedMessageIndex, 1);
+          
+          // Update the document with the modified texts array
+          await updateDoc(conversationRef, {
+            texts: texts,
+            lastUpdated: serverTimestamp(),
+          });
+          
+          // No need to update messages state here as the real-time listener will handle it
+        } else {
+          console.error("Cannot delete: Message doesn't exist or doesn't belong to you");
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
   const handlelogoutModal = () => {
     setShowlogoutModal(true);
   }
@@ -375,6 +420,7 @@ const HomePage = () => {
           setNewFriend("");
           setError(null);
           setShowAddFriendModal(false);
+          setRequestSent(true);
         }
       } catch (error) {
         setError(`Error sending friend request: ${error.message}`);
@@ -496,6 +542,7 @@ const HomePage = () => {
     }
   };
 
+  //fetch friend request username
   useEffect(() => {
     const fetchFriendRequestUsername = async () => {
       try {
@@ -522,12 +569,38 @@ const HomePage = () => {
     fetchFriendRequestUsername();
   }, [friendRequested]);
 
+  //fetch user username
+  useEffect(() => {
+    const fetchUserUsername = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+  
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+  
+        if (userDoc.exists()) {
+            // Fetch the username using the helper function
+            const username = await getUsernameById(user.uid);
+            if (username) {
+              setUserUsername(username);
+            }
+        }
+      } catch (error) {
+        console.error("Error fetching user username:", error);
+      }
+    };
+  
+    fetchUserUsername();
+  }, []);
+
   return (
     <div className="home-container">
       <audio ref={audioRef} src="/notf.mp3" preload="auto" />
 
       {/* Friends List */}
       <div className="friends-list">
+        <h3 className="username">{userUsername}</h3>
         <img src="logo.png" alt="logo" className="logo" onClick={handleImageClick}/>
         <h2>Friends</h2>
         <button className="add-friend-button" onClick={handleAddFriend}>
@@ -562,16 +635,32 @@ const HomePage = () => {
                   key={index}
                   className={`message ${msg.sender === "You" ? "user-message" : "recipient-message"}`}
                 >
-                  <strong>{msg.sender}: </strong>
-                  {msg.text}
-                  <span className="timestamp">
-                    {msg.timestamp?.toLocaleTimeString()}
-                    {msg.sender === "You" && (
-                      <span className="read-receipt">
-                        {msg.viewed ? " ✓✓" : " ✓"}
-                      </span>
-                    )}
-                  </span>
+                  <div className="message-content">
+                    <strong>{msg.sender}: </strong>
+                    {msg.text}
+                  </div>
+                  <div className="message-footer">
+                    <span className="timestamp">
+                      {msg.timestamp?.toLocaleTimeString()}
+                      {msg.sender === "You" && (
+                        <span className="read-receipt">
+                          {msg.viewed ? " ✓✓" : " ✓"}
+                        </span>
+                      )}
+                    </span>
+                    {msg.sender == "You" &&
+                    <div className="message-actions">
+                    <button className={`delete-button ${msg.sender === "You" ? "user" : "recipient"}`} title="Delete message"
+                      onClick={() => {
+                        setShowDeleteMessageModal(true);
+                        setDeletedMessageIndex(index); // Clear error when closing
+                      }}>
+                      <span className="dots">⋯</span>
+                    </button>
+                  </div>
+                    }
+                    
+                  </div>
                 </div>
               ))}
               <div ref={messagesEndRef}/>
@@ -691,7 +780,7 @@ const HomePage = () => {
         <div className="modal-overlay">
           <div className="modal">
             <h3>You got a new Friend Request!</h3>
-            <p>{friendRequestedUsername} wants to be your friend.</p>
+            <p><strong>{friendRequestedUsername}</strong> wants to be your friend.</p>
             <div className="modal-buttons">
               <button
                 onClick={() => handleFriendRequest(friendRequested, "accept")}
@@ -709,6 +798,43 @@ const HomePage = () => {
           </div>
         </div>
       )}
+
+      {requestSent && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Request Sent!</h3>
+            <div className="modal-buttons">
+              <button
+                onClick={() => setRequestSent(false)}
+                className="confirm-button"
+              >
+                Ok
+              </button>
+            </div> {/* Missing closing div added here */}
+          </div>
+        </div>
+      )}
+
+      {showDeleteMessageModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Delete Message</h3>
+            <p>Are you sure you want to delete message?</p>
+            <div className="modal-buttons">
+              <button
+                onClick={() => {
+                  handleDeleteMessage();
+                  setShowDeleteMessageModal(false); // Clear error when closing
+                }}
+                className="cancel-button"
+              >
+                Ok
+              </button>
+            </div> 
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

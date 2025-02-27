@@ -8,15 +8,19 @@
 /*logo*/
 .logo {
     margin-top:3vh;
-    width: 12vw;
-    height: 12vh;
+    width: 14vw;
+    height: 14vh;
     align-self: center;
     margin-top:5vh;
 
 }
   
   /* Friends List */
-  
+  .username {
+    text-align:center;
+    margin-top:3vh;
+    margin-bottom:0;
+  }
   .friends-list {
     display: flex;
     flex-direction: column;
@@ -143,6 +147,47 @@
   .user-message .timestamp {
     text-align: left;
     color: rgba(0, 0, 0, 0.6); /* Dark text for recipient's timestamp */
+  }
+
+  .message-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+  }
+  
+  .message-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .message:hover .message-actions {
+    opacity: 1;
+  }
+  
+  .delete-button {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .delete-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #555;
+  }
+
+  .delete-button.recipient {
+    color: white;
+  }
+  
+  .dots {
+    font-size: 16px;
+    display: inline-block;
+    transform: rotate(90deg);
   }
   /*Chat header*/
   .chat-header {
