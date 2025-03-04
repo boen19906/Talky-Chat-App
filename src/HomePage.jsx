@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, collection, getDocs, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  query,
+  where,
+  collection,
+  getDocs,
+  setDoc,
+  serverTimestamp,
+  onSnapshot,
+} from "firebase/firestore";
+import { auth, db, storage } from "./firebase"; // Using our firebase config
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
 
@@ -25,22 +39,25 @@ const HomePage = () => {
   const [friendRequestedUsername, setFriendRequestedUsername] = useState("");
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
-  const currentConversationIdRef = useRef(null); // Use ref to track current conversation ID
+  const currentConversationIdRef = useRef(null);
+
+  // For file uploads
+  const [imageFile, setImageFile] = useState(null);
 
   const navigate = useNavigate();
 
-  //new login 
+  // 1) Mark "new login" as false after 3s
   useEffect(() => {
-    // Reset 'isNewLogin' after 3 seconds (or another event like opening a chat)
     const timer = setTimeout(() => setIsNewLogin(false), 3000);
-    return () => clearTimeout(timer); // Cleanup on unmount
+    return () => clearTimeout(timer);
   }, []);
+
+  // 2) Listen to changes in user's friends array
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
-  
+
     const userDocRef = doc(db, "users", user.uid);
-  
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setFriends(docSnap.data().friends || []);
@@ -48,19 +65,18 @@ const HomePage = () => {
         console.error("User document not found.");
       }
     });
-  
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
+  // Helper function to fetch a user's username by ID
   const getUsernameById = async (userId) => {
     try {
       const userDocRef = doc(db, "users", userId);
       const userDoc = await getDoc(userDocRef);
-  
       if (userDoc.exists()) {
         return userDoc.data().username || null;
       } else {
-        console.error("User document not found.");
+        console.error("User document not found:", userId);
         return null;
       }
     } catch (error) {
@@ -69,6 +85,7 @@ const HomePage = () => {
     }
   };
 
+  // 3) Fetch each friend's username
   useEffect(() => {
     if (friends.length > 0) {
       const fetchFriendUsernames = async () => {
@@ -77,18 +94,15 @@ const HomePage = () => {
           const username = await getUsernameById(friendId);
           if (username) {
             usernames[friendId] = username;
-          } else {
-            console.error("Username not found for ID:", friendId);
           }
         }
         setFriendUsernames(usernames);
       };
-  
       fetchFriendUsernames();
     }
   }, [friends]);
 
-  // Update currentConversationIdRef whenever selectedFriend changes
+  // 4) Keep track of the current conversation ID
   useEffect(() => {
     const user = auth.currentUser;
     if (user && selectedFriend) {
@@ -98,38 +112,31 @@ const HomePage = () => {
     }
   }, [selectedFriend]);
 
-  // Mark messages as viewed when a friend is selected
+  // 5) Mark messages as viewed when a friend is selected
   useEffect(() => {
     const markMessagesAsViewed = async () => {
       const user = auth.currentUser;
       if (user && selectedFriend) {
         const conversationId = [user.uid, selectedFriend].sort().join("_");
         const conversationRef = doc(db, "messages", conversationId);
-        
+
         try {
           const conversationDoc = await getDoc(conversationRef);
-          
           if (conversationDoc.exists()) {
             const textsArray = conversationDoc.data().texts || [];
             let updated = false;
-            
-            // Create a new array with viewed status updated
-            const updatedTexts = textsArray.map(msg => {
+
+            const updatedTexts = textsArray.map((msg) => {
               if (msg.sender === selectedFriend && !msg.viewed) {
                 updated = true;
                 return { ...msg, viewed: true };
               }
               return msg;
             });
-            
-            // Only update if there were unread messages
+
             if (updated) {
-              await updateDoc(conversationRef, {
-                texts: updatedTexts
-              });
-              
-              // Update local unread messages state
-              setUnreadMessages(prev => {
+              await updateDoc(conversationRef, { texts: updatedTexts });
+              setUnreadMessages((prev) => {
                 const newState = { ...prev };
                 newState[selectedFriend] = 0;
                 return newState;
@@ -141,35 +148,27 @@ const HomePage = () => {
         }
       }
     };
-    
     markMessagesAsViewed();
-  }, [selectedFriend, messages]); // Add messages as a dependency
+  }, [selectedFriend, messages]);
 
-  // useEffect to fetch messages for the selectedFriend
+  // 6) Real-time listener for the currently selected conversation
   useEffect(() => {
     let unsubscribe = () => {};
-    
+
     const fetchMessages = async () => {
       if (selectedFriend) {
         const user = auth.currentUser;
         if (!user) return;
-        
+
         try {
-          // Create a unique ID for the conversation
           const conversationId = [user.uid, selectedFriend].sort().join("_");
-          
-          // Reference the conversation document
           const conversationRef = doc(db, "messages", conversationId);
-          
-          // Set up a real-time listener for the conversation document
-          unsubscribe = onSnapshot(conversationRef, async (doc) => {
-            // Only process if this is still the current conversation
+
+          unsubscribe = onSnapshot(conversationRef, (docSnap) => {
+            // Only update if this is still the current conversation
             if (conversationId === currentConversationIdRef.current) {
-              if (doc.exists()) {
-                // Get the `texts` array from the document
-                const texts = doc.data().texts || [];
-                
-                // Format the messages
+              if (docSnap.exists()) {
+                const texts = docSnap.data().texts || [];
                 const formattedMessages = texts.map((msg) => {
                   let timestamp;
                   if (msg.timestamp?.toDate) {
@@ -184,12 +183,15 @@ const HomePage = () => {
 
                   return {
                     text: msg.text,
-                    sender: msg.sender === user.uid ? "You" : friendUsernames[msg.sender] || "Unknown",
+                    sender:
+                      msg.sender === user.uid
+                        ? "You"
+                        : friendUsernames[msg.sender] || "Unknown",
                     timestamp: timestamp,
-                    viewed: msg.viewed
+                    viewed: msg.viewed,
+                    imageUrl: msg.imageUrl || null,
                   };
                 });
-
                 setMessages(formattedMessages);
               } else {
                 setMessages([]);
@@ -200,117 +202,170 @@ const HomePage = () => {
           console.error("Error setting up real-time listener:", error);
         }
       } else {
-        // Clear messages when no friend is selected
         setMessages([]);
       }
     };
 
     fetchMessages();
-    
-    // Clean up the listener when the component unmounts or selectedFriend changes
     return () => unsubscribe();
   }, [selectedFriend, friendUsernames]);
 
-  // useEffect to track unread messages from non-selected friends
+  // 7) Track unread messages for non-selected friends
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
-  
-    // Set up listeners for all conversations
+
     const unsubscribeMap = {};
-  
-    friends.forEach(friendId => {
-      // Skip setting up listener for the selected friend
-      if (friendId === selectedFriend) {
-        return;
-      }
-  
+
+    friends.forEach((friendId) => {
+      // Skip if it's the selected friend
+      if (friendId === selectedFriend) return;
+
       const conversationId = [user.uid, friendId].sort().join("_");
       const conversationRef = doc(db, "messages", conversationId);
-  
-      // Set up a real-time listener for each conversation (except selected friend)
-      const unsubscribe = onSnapshot(conversationRef, (doc) => {
-        if (doc.exists()) {
-          const texts = doc.data().texts || [];
-  
-          // Count unread messages (messages sent by the friend that haven't been viewed)
-          const unreadCount = texts.filter(msg => msg.sender === friendId && !msg.viewed).length;
-  
-          // Update the unread messages count for this friend
-          setUnreadMessages(prev => ({ ...prev, [friendId]: unreadCount }));
-  
-          // Play notification sound if there are new messages and it's not the selected friend
+
+      const unsubscribe = onSnapshot(conversationRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const texts = docSnap.data().texts || [];
+          const unreadCount = texts.filter(
+            (msg) => msg.sender === friendId && !msg.viewed
+          ).length;
+
+          setUnreadMessages((prev) => ({ ...prev, [friendId]: unreadCount }));
+
+          // Play notification sound if new messages come in
           if (!isNewLogin && unreadCount > 0 && audioRef.current) {
-            audioRef.current.play().catch(err => console.error("Error playing sound:", err));
+            audioRef.current
+              .play()
+              .catch((err) => console.error("Error playing sound:", err));
           }
         }
       });
-  
+
       unsubscribeMap[friendId] = unsubscribe;
     });
-  
-    // Clean up listeners when component unmounts
+
     return () => {
-      Object.values(unsubscribeMap).forEach(unsubscribe => unsubscribe());
+      Object.values(unsubscribeMap).forEach((fn) => fn());
     };
-  }, [friends, selectedFriend]);
-  
+  }, [friends, selectedFriend, isNewLogin]);
+
+  // 8) Send text message
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (message.trim() && selectedFriend) {
       try {
         const user = auth.currentUser;
-        if (user) {
-          // Create a unique ID for the conversation
-          const conversationId = [user.uid, selectedFriend].sort().join("_");
-  
-          // Reference the conversation document
-          const conversationRef = doc(db, "messages", conversationId);
-  
-          // Check if the document exists
-          const conversationDoc = await getDoc(conversationRef);
-  
-          if (conversationDoc.exists()) {
-            // If the document exists, append the new message to the `texts` array
-            await updateDoc(conversationRef, {
-              texts: arrayUnion({
-                sender: user.uid,
-                recipient: selectedFriend,
-                text: message,
-                timestamp: new Date().toISOString(),
-                viewed: false,
-              }),
-              lastUpdated: serverTimestamp(),
-            });
-          } else {
-            // If the document doesn't exist, create it with the new message
-            await setDoc(conversationRef, {
-              participants: [user.uid, selectedFriend],
-              texts: [
-                {
-                  sender: user.uid,
-                  recipient: selectedFriend,
-                  text: message,
-                  timestamp: new Date().toISOString(),
-                  viewed: false,
-                },
-              ],
-              lastUpdated: serverTimestamp(),
-            });
-          }
-  
-          setMessage("");
-          // No need to update messages state here as the real-time listener will handle it
+        if (!user) return;
+
+        const conversationId = [user.uid, selectedFriend].sort().join("_");
+        const conversationRef = doc(db, "messages", conversationId);
+        const conversationDoc = await getDoc(conversationRef);
+
+        const newMessage = {
+          sender: user.uid,
+          recipient: selectedFriend,
+          text: message,
+          timestamp: new Date().toISOString(),
+          viewed: false,
+        };
+
+        if (conversationDoc.exists()) {
+          await updateDoc(conversationRef, {
+            texts: arrayUnion(newMessage),
+            lastUpdated: serverTimestamp(),
+          });
+        } else {
+          await setDoc(conversationRef, {
+            participants: [user.uid, selectedFriend],
+            texts: [newMessage],
+            lastUpdated: serverTimestamp(),
+          });
         }
+
+        setMessage("");
       } catch (error) {
         console.error("Error sending message:", error);
       }
     }
   };
 
+  // 9) Handle file selection
+  const handleImageChange = (e) => {
+    if (e.target.files[0]) {
+      console.log("File selected:", e.target.files[0]);
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  // 10) Upload image and send as a message
+  const handleUploadImage = async () => {
+    console.log("handleUploadImage triggered");
+    if (!imageFile) {
+      console.log("No image file selected.");
+      return;
+    }
+    if (!selectedFriend) {
+      console.log("No friend selected.");
+      return;
+    }
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log("User not authenticated.");
+        return;
+      }
+      console.log("Uploading image:", imageFile);
+
+      // Create a unique filename
+      const imageName = uuidv4() + "_" + imageFile.name;
+      const imageRef = ref(storage, `chatImages/${imageName}`);
+
+      // Upload file to Firebase Storage
+      const snapshot = await uploadBytes(imageRef, imageFile);
+      console.log("File uploaded, snapshot:", snapshot);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      console.log("Download URL:", downloadURL);
+
+      // Build the message object with the image URL
+      const conversationId = [user.uid, selectedFriend].sort().join("_");
+      const conversationRef = doc(db, "messages", conversationId);
+      const conversationDoc = await getDoc(conversationRef);
+
+      const newMessage = {
+        sender: user.uid,
+        recipient: selectedFriend,
+        text: "",
+        imageUrl: downloadURL,
+        timestamp: new Date().toISOString(),
+        viewed: false,
+      };
+
+      if (conversationDoc.exists()) {
+        await updateDoc(conversationRef, {
+          texts: arrayUnion(newMessage),
+          lastUpdated: serverTimestamp(),
+        });
+      } else {
+        await setDoc(conversationRef, {
+          participants: [user.uid, selectedFriend],
+          texts: [newMessage],
+          lastUpdated: serverTimestamp(),
+        });
+      }
+
+      console.log("Image message sent successfully.");
+      // Clear the file input
+      setImageFile(null);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
+
+  // 11) Logout handling
   const handlelogoutModal = () => {
     setShowlogoutModal(true);
-  }
+  };
 
   const handlelogout = async () => {
     try {
@@ -321,6 +376,7 @@ const HomePage = () => {
     }
   };
 
+  // 12) Add friend modal
   const handleAddFriend = () => {
     setShowAddFriendModal(true);
   };
@@ -330,52 +386,52 @@ const HomePage = () => {
     if (newFriend.trim()) {
       try {
         const user = auth.currentUser;
-        if (user) {
-          // Look up the friend by their username
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("username", "==", newFriend));
-          const querySnapshot = await getDocs(q);
-  
-          if (querySnapshot.empty) {
-            setError("User not found. Please check the username and try again.");
-            return;
-          }
-  
-          // Get the friend's user ID and document reference
-          const friendDoc = querySnapshot.docs[0];
-          const friendId = friendDoc.id;
-          const friendDocRef = doc(db, "users", friendId);
-  
-          // Check if already friends
-          if (friends.includes(friendId)) {
-            setError("You are already friends with this user.");
-            return;
-          }
-  
-          // Check if already sent a request
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const userData = userDoc.data();
-          
-          if (userData.sentFriendRequests && userData.sentFriendRequests.includes(friendId)) {
-            setError("Friend request already sent.");
-            return;
-          }
-  
-          // Add request to the friend's friendRequests array
-          await updateDoc(friendDocRef, {
-            friendRequests: arrayUnion(user.uid)
-          });
-  
-          // Add to current user's sentFriendRequests array
-          const userDocRef = doc(db, "users", user.uid);
-          await updateDoc(userDocRef, {
-            sentFriendRequests: arrayUnion(friendId)
-          });
-  
-          setNewFriend("");
-          setError(null);
-          setShowAddFriendModal(false);
+        if (!user) return;
+
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", newFriend));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          setError("User not found. Please check the username and try again.");
+          return;
         }
+
+        const friendDoc = querySnapshot.docs[0];
+        const friendId = friendDoc.id;
+        const friendDocRef = doc(db, "users", friendId);
+
+        // Check if already friends
+        if (friends.includes(friendId)) {
+          setError("You are already friends with this user.");
+          return;
+        }
+
+        // Check if request already sent
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        if (
+          userData.sentFriendRequests &&
+          userData.sentFriendRequests.includes(friendId)
+        ) {
+          setError("Friend request already sent.");
+          return;
+        }
+
+        // Add request to friend's friendRequests array
+        await updateDoc(friendDocRef, {
+          friendRequests: arrayUnion(user.uid),
+        });
+
+        // Add to current user's sentFriendRequests array
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, {
+          sentFriendRequests: arrayUnion(friendId),
+        });
+
+        setNewFriend("");
+        setError(null);
+        setShowAddFriendModal(false);
       } catch (error) {
         setError(`Error sending friend request: ${error.message}`);
         console.error("Error sending friend request:", error);
@@ -383,93 +439,85 @@ const HomePage = () => {
     }
   };
 
+  // 13) Handle incoming friend requests
   const handleFriendRequest = async (requesterId, action) => {
     try {
       const user = auth.currentUser;
       if (!user) return;
-  
+
       const userDocRef = doc(db, "users", user.uid);
       const requesterDocRef = doc(db, "users", requesterId);
-  
+
       if (action === "accept") {
-        // Add each user to the other's friends list
         await updateDoc(userDocRef, {
           friends: arrayUnion(requesterId),
-          friendRequests: arrayRemove(requesterId)
+          friendRequests: arrayRemove(requesterId),
         });
-  
+
         await updateDoc(requesterDocRef, {
           friends: arrayUnion(user.uid),
-          sentFriendRequests: arrayRemove(user.uid)
+          sentFriendRequests: arrayRemove(user.uid),
         });
-  
-        // Update local state
+
         setFriends([...friends, requesterId]);
       } else if (action === "decline") {
-        // Remove the request
         await updateDoc(userDocRef, {
-          friendRequests: arrayRemove(requesterId)
+          friendRequests: arrayRemove(requesterId),
         });
-  
         await updateDoc(requesterDocRef, {
-          sentFriendRequests: arrayRemove(user.uid)
+          sentFriendRequests: arrayRemove(user.uid),
         });
       }
-  
-      
     } catch (error) {
       console.error("Error handling friend request:", error);
       setError(`Error handling friend request: ${error.message}`);
     }
   };
 
-  //hook to track friendRequests
+  // 14) Track friendRequests in real-time
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
 
     const userDocRef = doc(db, "users", user.uid);
-
     const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         const currentRequests = data.friendRequests || [];
 
-        // Check if new friend requests were added
         if (currentRequests.length > 0) {
           setNewFriendRequest(true);
         }
-
-        setFriendRequested(data.friendRequests[0]); // Update state with new requests
+        setFriendRequested(data.friendRequests[0] || "");
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
-  }, []); // Dependencies
+    return () => unsubscribe();
+  }, []);
 
+  // 15) Remove friend
   const handleRemoveFriend = async () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
-  
+
       const userDocRef = doc(db, "users", user.uid);
       const friendDocRef = doc(db, "users", friendToRemove);
-  
-      // Remove the friend from the user's friends list
+
+      // Remove from user's friends
       await updateDoc(userDocRef, {
         friends: arrayRemove(friendToRemove),
       });
-  
-      // Remove the user from the friend's friends list
+
+      // Remove user from friend's friends
       const friendDoc = await getDoc(friendDocRef);
       if (friendDoc.exists()) {
         await updateDoc(friendDocRef, {
           friends: arrayRemove(user.uid),
         });
       }
-  
-      // Update the local state
-      setFriends(friends.filter((friend) => friend !== friendToRemove));
+
+      setFriends(friends.filter((f) => f !== friendToRemove));
       setSelectedFriend(null);
       setShowRemoveFriendModal(false);
     } catch (error) {
@@ -477,16 +525,19 @@ const HomePage = () => {
     }
   };
 
+  // Simple function to reset selected friend on logo click
   const handleImageClick = () => {
     setSelectedFriend(null);
-  }
+  };
 
+  // 16) Always scroll to bottom of messages
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  // 17) Click friend to chat or remove
   const handleFriendClick = (friendId) => {
     if (selectedFriend === friendId) {
       setFriendToRemove(friendId);
@@ -496,39 +547,39 @@ const HomePage = () => {
     }
   };
 
+  // 18) Fetch the username for the incoming friend request
   useEffect(() => {
     const fetchFriendRequestUsername = async () => {
       try {
         const user = auth.currentUser;
         if (!user) return;
-  
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-  
-        if (userDoc.exists()) {
-          if (friendRequested) { 
-            // Fetch the username using the helper function
-            const username = await getUsernameById(friendRequested);
-            if (username) {
-              setFriendRequestedUsername(username);
-            }
+
+        if (friendRequested) {
+          const username = await getUsernameById(friendRequested);
+          if (username) {
+            setFriendRequestedUsername(username);
           }
         }
       } catch (error) {
         console.error("Error fetching friend request username:", error);
       }
     };
-  
     fetchFriendRequestUsername();
   }, [friendRequested]);
 
+  // 19) Render
   return (
     <div className="home-container">
       <audio ref={audioRef} src="/notf.mp3" preload="auto" />
 
       {/* Friends List */}
       <div className="friends-list">
-        <img src="logo.png" alt="logo" className="logo" onClick={handleImageClick}/>
+        <img
+          src="logo.png"
+          alt="logo"
+          className="logo"
+          onClick={handleImageClick}
+        />
         <h2>Friends</h2>
         <button className="add-friend-button" onClick={handleAddFriend}>
           Add Friend
@@ -538,11 +589,15 @@ const HomePage = () => {
             <li
               key={index}
               onClick={() => handleFriendClick(friendId)}
-              className={`friend-list-item ${selectedFriend === friendId ? "selected" : ""}`}
+              className={`friend-list-item ${
+                selectedFriend === friendId ? "selected" : ""
+              }`}
             >
               {friendUsernames[friendId] || "Loading..."}
               {unreadMessages[friendId] > 0 && (
-                <div className="new-message-indicator">{unreadMessages[friendId]}</div>
+                <div className="new-message-indicator">
+                  {unreadMessages[friendId]}
+                </div>
               )}
             </li>
           ))}
@@ -560,10 +615,20 @@ const HomePage = () => {
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`message ${msg.sender === "You" ? "user-message" : "recipient-message"}`}
+                  className={`message ${
+                    msg.sender === "You" ? "user-message" : "recipient-message"
+                  }`}
                 >
                   <strong>{msg.sender}: </strong>
-                  {msg.text}
+                  {msg.imageUrl ? (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Uploaded"
+                      style={{ maxWidth: "200px", margin: "8px 0" }}
+                    />
+                  ) : (
+                    msg.text
+                  )}
                   <span className="timestamp">
                     {msg.timestamp?.toLocaleTimeString()}
                     {msg.sender === "You" && (
@@ -574,9 +639,24 @@ const HomePage = () => {
                   </span>
                 </div>
               ))}
-              <div ref={messagesEndRef}/>
+              <div ref={messagesEndRef} />
             </div>
+
+            {/* Chat Input */}
             <form onSubmit={handleSendMessage} className="chat-input">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ marginRight: "8px" }}
+              />
+              <button
+                type="button"
+                onClick={handleUploadImage}
+                style={{ marginRight: "8px" }}
+              >
+                Upload
+              </button>
               <input
                 type="text"
                 value={message}
@@ -618,9 +698,8 @@ const HomePage = () => {
                 type="button"
                 onClick={() => {
                   setShowAddFriendModal(false);
-                  setError(null); // Clear error when closing
+                  setError(null);
                 }}
-                
                 className="cancel-button"
               >
                 Cancel
@@ -637,14 +716,11 @@ const HomePage = () => {
             <h3>Remove Friend</h3>
             <p>
               Are you sure you want to remove{" "}
-              <strong>{friendUsernames[friendToRemove] || "Unknown"}</strong> from your
-              friends list?
+              <strong>{friendUsernames[friendToRemove] || "Unknown"}</strong>{" "}
+              from your friends list?
             </p>
             <div className="modal-buttons">
-              <button
-                onClick={handleRemoveFriend}
-                className="confirm-button"
-              >
+              <button onClick={handleRemoveFriend} className="confirm-button">
                 Yes, Remove
               </button>
               <button
@@ -665,14 +741,9 @@ const HomePage = () => {
         <div className="modal-overlay">
           <div className="modal">
             <h3>Log Out?</h3>
-            <p>
-              Are you sure you want to log out?
-            </p>
+            <p>Are you sure you want to log out?</p>
             <div className="modal-buttons">
-              <button
-                onClick={handlelogout}
-                className="confirm-button"
-              >
+              <button onClick={handlelogout} className="confirm-button">
                 Log out
               </button>
               <button
