@@ -1,109 +1,52 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase"; // Import auth from your firebase config
 
 /**
- * Custom hook to fetch and manage usernames for given user IDs
+ * Custom hook to fetch and manage usernames for given user IDs including current user
  * @param {Array} userIds - Array of user IDs to fetch usernames for
- * @param {boolean} autoFetch - Whether to fetch usernames automatically when userIds change
+ * @param {boolean} includeCurrentUser - Whether to include current user's username
  * @returns {Object} An object containing usernames map, loading state, and utility functions
  */
-const useUsername = (userIds = [], autoFetch = true) => {
-  const [usernames, setUsernames] = useState({});
-  const [loading, setLoading] = useState(false);
+const useUsername = () => {
+  const [userUsername, setUserUsername] = useState("");
   const [error, setError] = useState(null);
 
-  // Helper function to fetch a single username by user ID
-  const getUsernameById = async (userId) => {
-    try {
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
+  // Get current user ID
+  const currentUserId = auth.currentUser?.uid;
 
-      if (userDoc.exists()) {
-        return userDoc.data().username || null;
-      } else {
-        console.error("User document not found for ID:", userId);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching username:", error);
-      setError(error.message);
-      return null;
-    }
-  };
-
-  // Function to fetch multiple usernames
-  const fetchUsernames = async (ids = userIds) => {
-    if (!ids || ids.length === 0) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const newUsernames = { ...usernames };
-      let hasChanges = false;
-
-      for (const userId of ids) {
-        // Skip if we already have this username
-        if (newUsernames[userId]) continue;
-        
-        const username = await getUsernameById(userId);
-        if (username) {
-          newUsernames[userId] = username;
-          hasChanges = true;
-        }
-      }
-
-      if (hasChanges) {
-        setUsernames(newUsernames);
-      }
-    } catch (error) {
-      console.error("Error fetching usernames:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to fetch a single username and add it to state
-  const fetchUsername = async (userId) => {
-    if (!userId) return null;
-    
-    // Return from cache if available
-    if (usernames[userId]) return usernames[userId];
-    
-    try {
-      const username = await getUsernameById(userId);
-      
-      if (username) {
-        setUsernames(prev => ({
-          ...prev,
-          [userId]: username
-        }));
-        return username;
-      }
-      return null;
-    } catch (error) {
-      console.error("Error in fetchUsername:", error);
-      setError(error.message);
-      return null;
-    }
-  };
-
-  // Auto-fetch usernames when userIds change
+  // Helper function to fetch username by user ID
   useEffect(() => {
-    if (autoFetch && userIds && userIds.length > 0) {
-      fetchUsernames(userIds);
-    }
-  }, [userIds, autoFetch]);
+    const getUsername = async () => {
+        if (currentUserId) {
+            try {
+                const userDocRef = doc(db, "users", currentUserId);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    setUserUsername(userDoc.data()?.username);
+                } else {
+                    setError(`User document not found for ID: ${currentUserId}`);
+                }
+            } catch (error) {
+                setError(`Error fetching username: ${error.message}`);
+            }
+        }
+    };
+
+    getUsername();
+}, [currentUserId]); // Dependency array ensures this runs when currentUserId changes
+
+
+
+  
+
+  
+
+
 
   return {
-    usernames,
-    loading,
-    error,
-    fetchUsername,
-    fetchUsernames,
-    getUsernameById,
+    userUsername
   };
 };
 

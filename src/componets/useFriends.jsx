@@ -17,6 +17,8 @@ const useFriends = (setShowFriendRequestModal) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupNames, setGroupNames] = useState([]);
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+  
   
 
   useEffect(() => {
@@ -53,6 +55,41 @@ const useFriends = (setShowFriendRequestModal) => {
       return null;
     }
   };
+
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      if (!selectedGroup) return;
+  
+      try {
+        // Get group document reference
+        const groupDocRef = doc(db, 'messages', selectedGroup);
+        const groupDoc = await getDoc(groupDocRef);
+  
+        if (!groupDoc.exists()) {
+          console.error('Group document not found');
+          setSelectedGroupMembers([]);
+          return;
+        }
+  
+        // Get participants array from document
+        const participantsIds = groupDoc.data().participants || [];
+        
+        // Fetch usernames for all participant IDs
+        const usernamesPromises = participantsIds.map(id => getUsernameById(id));
+        const usernames = await Promise.all(usernamesPromises);
+        
+        // Filter out any null values and update state
+        const validUsernames = usernames.filter(username => username !== null);
+        setSelectedGroupMembers(validUsernames);
+  
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+        setSelectedGroupMembers([]);
+      }
+    };
+  
+    fetchParticipants();
+  }, [selectedGroup]); // Runs whenever selectedGroup changes
 
   useEffect(() => {
     const fetchUserGroups = async () => {
@@ -116,7 +153,7 @@ const useFriends = (setShowFriendRequestModal) => {
   
     // Initial fetch
     fetchUserGroups();
-  }, []);
+  }, [auth.currentUser.uid, groups]); // Add auth.currentUser.uid as a dependency
 
   useEffect(() => {
     if (friends.length > 0) {
@@ -355,13 +392,21 @@ const useFriends = (setShowFriendRequestModal) => {
       if (!memberIds.includes(user.uid)) {
         memberIds.push(user.uid);
       }
-      
+  
       // Sort participant IDs for consistency
       const participants = [...memberIds].sort();
-      
+  
       // Create the group ID from sorted participant IDs
       const groupId = `${participants.join('_')}`;
-      
+  
+      // Check if group already exists
+      const messagesRef = doc(db, "messages", groupId);
+      const docSnap = await getDoc(messagesRef);
+      if (docSnap.exists()) {
+        setError("This group chat already exists");
+        return null;
+      }
+  
       // Add the group to each participant's groups array
       for (const memberId of participants) {
         const memberRef = doc(db, "users", memberId);
@@ -369,9 +414,8 @@ const useFriends = (setShowFriendRequestModal) => {
           groups: arrayUnion(groupId)
         });
       }
-      
+  
       // Create the messages document
-      const messagesRef = doc(db, "messages", groupId);
       await setDoc(messagesRef, {
         participants,
         groupName: groupName,
@@ -379,7 +423,7 @@ const useFriends = (setShowFriendRequestModal) => {
         texts: [],
         lastUpdated: serverTimestamp()
       });
-      
+  
       return groupId;
     } catch (error) {
       console.error("Error creating group:", error);
@@ -395,6 +439,8 @@ const useFriends = (setShowFriendRequestModal) => {
     setSelectedFriend,
     selectedGroup,
     setSelectedGroup,
+    selectedGroupMembers,
+    setSelectedGroupMembers,
     friendToRemove,
     setFriendToRemove,
     groupToRemove,

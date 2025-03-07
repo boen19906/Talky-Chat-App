@@ -1,61 +1,49 @@
 import { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
-const useUnreadMessages = (selectedConversationId, isNewLogin, audioRef) => {
+const useUnreadMessages = (friends, selectedFriend, isNewLogin, audioRef) => {
   const [unreadMessages, setUnreadMessages] = useState({});
 
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
-    
-    // Query all messages documents where the current user is a participant
-    const messagesRef = collection(db, "messages");
-    const q = query(
-      messagesRef,
-      where("participants", "array-contains", user.uid)
-    );
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const unreadUpdates = {};
-      
-      querySnapshot.forEach((doc) => {
-        const conversationId = doc.id;
-        const conversationData = doc.data();
-        const texts = conversationData.texts || [];
-        const participants = conversationData.participants || [];
-        
-        // Skip the currently selected conversation
-        if (conversationId === selectedConversationId) return;
-        
-        // Count unread messages
-        const unreadCount = texts.filter(
-          (msg) => msg.sender !== user.uid && !msg.viewed
-        ).length;
-        
-        if (unreadCount > 0) {
-          // Determine if it's a group chat (more than 2 participants) or direct message
-          const isGroupChat = participants.length > 2;
-          
-          // Play notification sound for new messages
-          if (!isNewLogin && audioRef.current) {
-            audioRef.current.play().catch(e => console.error("Error playing notification sound:", e));
+
+    const unsubscribeMap = {};
+    friends.forEach((friendId) => {
+      // Skip if it's the selected friend
+      if (friendId === selectedFriend) return;
+
+      const conversationId = [user.uid, friendId].sort().join("_");
+      const conversationRef = doc(db, "messages", conversationId);
+
+      const unsubscribe = onSnapshot(conversationRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const texts = docSnap.data().texts || [];
+          const unreadCount = texts.filter(
+            (msg) => msg.sender === friendId && !msg.viewed
+          ).length;
+
+          setUnreadMessages((prev) => ({ ...prev, [friendId]: unreadCount }));
+
+          // Play notification sound if new messages come in
+          if (!isNewLogin && unreadCount > 0 && audioRef.current) {
+            audioRef.current
+              .play()
+              .catch((err) => console.error("Error playing sound:", err));
           }
-          
-          unreadUpdates[conversationId] = {
-            count: unreadCount,
-            isGroup: isGroupChat
-          };
         }
       });
-      
-      setUnreadMessages(unreadUpdates);
-    });
-    
-    return () => unsubscribe();
-  }, [selectedConversationId, isNewLogin, audioRef]);
 
-  return { unreadMessages };
+      unsubscribeMap[friendId] = unsubscribe;
+    });
+
+    return () => {
+      Object.values(unsubscribeMap).forEach((fn) => fn());
+    };
+  }, [friends, selectedFriend, isNewLogin]);
+
+  return { unreadMessages, setUnreadMessages };
 };
 
 export default useUnreadMessages;

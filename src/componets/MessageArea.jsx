@@ -10,7 +10,15 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
         >
           <div className="message-content">
             <strong>{msg.sender}: </strong>
-            {msg.text}
+            {msg.imageUrl ? (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Uploaded"
+                      style={{ maxWidth: "200px", margin: "8px 0" }}
+                    />
+                  ) : (
+                    msg.text
+                  )}
           </div>
           <div className="message-footer">
             <span className="timestamp">

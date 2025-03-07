@@ -41,15 +41,15 @@ const HomePage = () => {
 
   // Custom hooks
   const { user } = useAuth();
-  const { selectedGroup, setSelectedGroup, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
+  const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest } = useFriends(setShowFriendRequestModal);
-  const { message, setMessage, messages, handleSendMessage, handleDeleteMessage } = useMessages(
+  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, imageFile } = useMessages(
     selectedFriend,
     selectedGroup,
     friendUsernames, 
     deletedMessageIndex
   );
-  const { unreadMessages } = useUnreadMessages(friends, selectedFriend, isNewLogin, audioRef);
+  const { unreadMessages, setUnreadMessages } = useUnreadMessages(friends, selectedFriend, isNewLogin, audioRef);
   const { userUsername } = useUsername();
 
   useEffect(() => {
@@ -115,6 +115,7 @@ const HomePage = () => {
         friendUsernames={friendUsernames}
         unreadMessages={unreadMessages}
         setShowAddGroupModal={setShowAddGroupModal}
+        setUnreadMessages={setUnreadMessages}
         groups = {groups}
         groupNames = {groupNames}
         handleGroupClick = {handleGroupClick}
@@ -125,12 +126,16 @@ const HomePage = () => {
       <ChatArea 
         selectedFriend={selectedFriend}
         selectedGroup = {selectedGroup}
+        selectedGroupMembers={selectedGroupMembers}
         groupNames = {groupNames}
         friendUsernames={friendUsernames}
         messages={messages}
         message={message}
         setMessage={setMessage}
         handleSendMessage={handleSendMessage}
+        handleImageChange = {handleImageChange}
+        handleUploadImage = {handleUploadImage}
+        imageFile={imageFile}
         setShowDeleteMessageModal={setShowDeleteMessageModal}
         setDeletedMessageIndex={setDeletedMessageIndex}
       />

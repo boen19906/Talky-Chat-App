@@ -7,7 +7,7 @@ const AddFriendModal = ({ handleAddFriendSubmit, setShowAddFriendModal, error, s
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h3>Add Friend</h3>
+        <h3>Send Friend Request</h3>
         <form onSubmit={() => {handleAddFriendSubmit()
             setShowAddFriendModal(false)
             setRequestSent(true)
@@ -25,7 +25,7 @@ const AddFriendModal = ({ handleAddFriendSubmit, setShowAddFriendModal, error, s
             required
           />
           {error && <div className="error-message">{error}</div>}
-          <button type="submit">Add</button>
+          <button type="submit">Send</button>
           <button
             type="button"
             onClick={() => {

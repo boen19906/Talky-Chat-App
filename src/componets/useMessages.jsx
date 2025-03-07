@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, updateDoc, setDoc, arrayUnion, serverTimestamp, onSnapshot } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { v4 as uuidv4 } from "uuid";
 
 const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMessageIndex) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
   const currentConversationIdRef = useRef(null);
 
   // Update currentConversationIdRef whenever selectedFriend or selectedGroup changes
@@ -12,8 +15,10 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     const user = auth.currentUser;
     if (user && selectedFriend) {
       currentConversationIdRef.current = [user.uid, selectedFriend].sort().join("_");
+      console.log(currentConversationIdRef.current);
     } else if (selectedGroup) {
-      currentConversationIdRef.current = `group_${selectedGroup}`;
+      currentConversationIdRef.current = `${selectedGroup}`;
+      console.log(currentConversationIdRef.current);
     } else {
       currentConversationIdRef.current = null;
     }
@@ -64,6 +69,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     let unsubscribe = () => {};
     
     const fetchMessages = async () => {
+      
       const user = auth.currentUser;
       if (!user) return;
       
@@ -77,7 +83,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
           conversationRef = doc(db, "messages", conversationId);
         } else if (selectedGroup) {
           // Group conversation
-          conversationId = `group_${selectedGroup}`;
+          conversationId = `${selectedGroup}`;
           conversationRef = doc(db, "messages", selectedGroup);
         } else {
           // No conversation selected
@@ -110,7 +116,8 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
                   text: msg.text,
                   sender: msg.sender === user.uid ? "You" : friendUsernames[msg.sender] || "Unknown",
                   timestamp: timestamp,
-                  viewed: selectedFriend ? msg.viewed : undefined // Only track viewed status for direct messages
+                  viewed: selectedFriend ? msg.viewed : undefined, // Only track viewed status for direct messages
+                  imageUrl: msg.imageUrl || null
                 };
               });
 
@@ -250,7 +257,90 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     }
   };
 
-  return { message, setMessage, messages, handleSendMessage, handleDeleteMessage };
+  // 9) Handle file selection
+  const handleImageChange = (e) => {
+    if (e.target.files[0]) {
+      console.log("File selected:", e.target.files[0]);
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  // 10) Upload image and send as a message
+  // 10) Upload image and send as a message
+  const handleUploadImage = async () => {
+    console.log("handleUploadImage triggered");
+    if (!imageFile || (!selectedFriend && !selectedGroup)) return;
+  
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      // 1. Upload image to Firebase Storage
+      const imageName = uuidv4() + "_" + imageFile.name;
+      const imageRef = ref(storage, `chatImages/${imageName}`);
+      const snapshot = await uploadBytes(imageRef, imageFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+  
+      // 2. Pre-load the image before sending the message
+      const preloadImage = () => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = downloadURL;
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      };
+  
+      await preloadImage();
+  
+      // 3. Determine conversation type and ID
+      const isGroup = !!selectedGroup;
+      const conversationId = isGroup 
+        ? selectedGroup 
+        : [user.uid, selectedFriend].sort().join("_");
+  
+      // 4. Create message object
+      const newMessage = {
+        sender: user.uid,
+        ...(isGroup ? { groupId: selectedGroup } : { recipient: selectedFriend }),
+        text: "",
+        imageUrl: downloadURL,
+        timestamp: new Date().toISOString(),
+        viewed: false,
+      };
+  
+      const conversationRef = doc(db, "messages", conversationId);
+  
+      // 5. Handle different conversation types
+      if (isGroup) {
+        // Group message - assume conversation document exists
+        await updateDoc(conversationRef, {
+          texts: arrayUnion(newMessage),
+          lastUpdated: serverTimestamp(),
+        });
+      } else {
+        // Private message - create conversation if it doesn't exist
+        if ((await getDoc(conversationRef)).exists()) {
+          await updateDoc(conversationRef, {
+            texts: arrayUnion(newMessage),
+            lastUpdated: serverTimestamp(),
+          });
+        } else {
+          await setDoc(conversationRef, {
+            participants: [user.uid, selectedFriend],
+            texts: [newMessage],
+            lastUpdated: serverTimestamp(),
+          });
+        }
+      }
+  
+      setImageFile(null);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
+
+  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, imageFile };
 };
 
 export default useMessages;
