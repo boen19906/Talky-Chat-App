@@ -9,6 +9,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const [messages, setMessages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const currentConversationIdRef = useRef(null);
 
@@ -293,8 +294,12 @@ const handleImageChange = (e) => {
   // 10) Upload image and send as a message
   // 10) Upload image and send as a message
   const handleUploadImage = async () => {
+    setIsLoading(true);
     console.log("handleUploadImage triggered");
-    if (!imageFile || (!selectedFriend && !selectedGroup)) return;
+    if (!imageFile || (!selectedFriend && !selectedGroup)) {
+      setIsLoading(false);
+      return;
+    }
   
     try {
       const user = auth.currentUser;
@@ -358,10 +363,14 @@ const handleImageChange = (e) => {
           });
         }
       }
-  
+
+      setIsLoading(false);
       setImageFile(null);
     } catch (error) {
       console.error("Error uploading image:", error);
+      setIsLoading(false); // Add this
+    } finally {
+      setIsLoading(false); // Optional safety net
     }
   };
 
@@ -377,7 +386,7 @@ const handleCancelImage = () => {
   }
 };
 
-  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview };
+  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading };
 };
 
 export default useMessages;

@@ -53,7 +53,7 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
         <div className="message-footer">
           <span className="timestamp" style={{ color: !isUser ? textColor : undefined }}>
             {msg.timestamp?.toLocaleTimeString()}
-            {isUser && (
+            {(isUser && !isGroup) && (
               <span className="read-receipt">
                 {msg.viewed ? " ✓✓" : " ✓"}
               </span>

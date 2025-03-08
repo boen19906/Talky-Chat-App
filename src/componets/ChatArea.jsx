@@ -18,6 +18,7 @@ const ChatArea = ({
     imageFile,
     imagePreview,
     fileInputRef,
+    isLoading,
     setShowDeleteMessageModal,
     setDeletedMessageIndex
 }) => {
@@ -118,6 +119,7 @@ const ChatArea = ({
                         imageFile={imageFile}
                         fileInputRef={fileInputRef}
                         imagePreview={imagePreview}
+                        isLoading={isLoading}
                     />
                 </>
             ) : selectedFriend ? (
@@ -146,6 +148,7 @@ const ChatArea = ({
                         imageFile={imageFile}
                         fileInputRef={fileInputRef}
                         imagePreview={imagePreview}
+                        isLoading={isLoading}
                     />
                 </>
             ) : (

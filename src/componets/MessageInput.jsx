@@ -1,7 +1,17 @@
-import {React, useState} from "react";
+import { React, useState } from "react";
 
-const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, imageFile, fileInputRef, imagePreview}) => {
-  const [isLoading, setIsLoading] = useState(false);
+const MessageInput = ({
+  message,
+  setMessage,
+  handleSendMessage,
+  handleImageChange,
+  handleUploadImage,
+  handleCancelImage,
+  imageFile,
+  fileInputRef,
+  imagePreview,
+  isLoading
+}) => {
   return (
     <form onSubmit={handleSendMessage} className="chat-input">
       <div className="file-upload-wrapper">
@@ -17,33 +27,37 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChang
           Attach
         </label>
       </div>
-  
+
       {imageFile ? (
         <div className="image-preview-container">
           <div className="preview-frame">
-          <img 
-            src={imagePreview} 
-            alt="Preview" 
-            className="constrained-preview"
-          />
-        </div>
-
-          <div className="image-action-buttons">
-            <button
-              type="button"
-              onClick={handleCancelImage}
-              className="cancel-image-button"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleUploadImage}
-              className="send-button"
-            >
-              Send
-            </button>
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="constrained-preview"
+            />
           </div>
+
+          {isLoading ? (
+            <div className="loading-spinner"></div>
+          ) : (
+            <div className="image-action-buttons">
+              <button
+                type="button"
+                onClick={handleCancelImage}
+                className="cancel-image-button"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUploadImage}
+                className="send-button"
+              >
+                Send
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>

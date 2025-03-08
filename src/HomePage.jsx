@@ -44,7 +44,7 @@ const HomePage = () => {
   const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
-  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview } = useMessages(
+  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading } = useMessages(
     selectedFriend,
     selectedGroup,
     friendUsernames, 
@@ -142,6 +142,7 @@ const HomePage = () => {
         imageFile={imageFile}
         imagePreview={imagePreview}
         fileInputRef={fileInputRef}
+        isLoading={isLoading}
         setShowDeleteMessageModal={setShowDeleteMessageModal}
         setDeletedMessageIndex={setDeletedMessageIndex}
       />
