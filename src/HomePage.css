@@ -325,6 +325,7 @@
 
 .send-button {
   padding: 8px 16px;
+  margin-left:1rem;
   background-color: #0096FF;
   color: white;
   border: none;
@@ -338,6 +339,22 @@
 .send-button:hover {
   background-color: #0077ff;
 }
+.cancel-image-button {
+  padding: 10px 11px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width:4rem;
+}
+
+.cancel-image-button:hover {
+  background-color: #c0392b;
+}
+
 
   /* logout Button */
 .logout-button {
@@ -735,6 +752,39 @@
 
 .create-button:hover {
   background-color: #43a047;
+}
+/*image preview*/
+/* Constrained preview container */
+.preview-frame {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f8f8;
+}
+
+.constrained-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.constrained-preview:hover {
+  transform: scale(1.05);
+  cursor: zoom-in;
+}
+
+.image-preview-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
 }
   
   

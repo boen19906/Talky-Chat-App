@@ -1,6 +1,7 @@
-import React from "react";
+import {React, useState} from "react";
 
-const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChange, handleUploadImage, imageFile }) => {
+const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, imageFile, fileInputRef, imagePreview}) => {
+  const [isLoading, setIsLoading] = useState(false);
   return (
     <form onSubmit={handleSendMessage} className="chat-input">
       <div className="file-upload-wrapper">
@@ -8,6 +9,7 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChang
           type="file"
           id="file-upload"
           accept="image/*"
+          ref={fileInputRef}
           onChange={handleImageChange}
           className="hidden-file-input"
         />
@@ -15,15 +17,34 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChang
           Attach
         </label>
       </div>
-
+  
       {imageFile ? (
-        <button
-          type="button"
-          onClick={handleUploadImage}
-          className="send-button"
-        >
-          Send
-        </button>
+        <div className="image-preview-container">
+          <div className="preview-frame">
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="constrained-preview"
+          />
+        </div>
+
+          <div className="image-action-buttons">
+            <button
+              type="button"
+              onClick={handleCancelImage}
+              className="cancel-image-button"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleUploadImage}
+              className="send-button"
+            >
+              Send
+            </button>
+          </div>
+        </div>
       ) : (
         <>
           <input
@@ -31,7 +52,6 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleImageChang
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
-            required
             className="message-input"
           />
           <button type="submit" className="send-button">

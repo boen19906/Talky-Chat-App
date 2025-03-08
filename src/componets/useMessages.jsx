@@ -8,6 +8,8 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
   const currentConversationIdRef = useRef(null);
 
   // Update currentConversationIdRef whenever selectedFriend or selectedGroup changes
@@ -24,49 +26,68 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     }
   }, [selectedFriend, selectedGroup]);
 
-  // Mark messages as viewed when a friend is selected (only for direct messages)
-  useEffect(() => {
-    const markMessagesAsViewed = async () => {
-      const user = auth.currentUser;
-      if (user && selectedFriend) {
-        const conversationId = [user.uid, selectedFriend].sort().join("_");
-        const conversationRef = doc(db, "messages", conversationId);
+  // Mark messages as viewed and reorder friends when a friend is selected
+useEffect(() => {
+  const markMessagesAsViewed = async () => {
+    const user = auth.currentUser;
+    if (user && selectedFriend) {
+      const conversationId = [user.uid, selectedFriend].sort().join("_");
+      const conversationRef = doc(db, "messages", conversationId);
+      
+      try {
+        const conversationDoc = await getDoc(conversationRef);
         
-        try {
-          const conversationDoc = await getDoc(conversationRef);
+        if (conversationDoc.exists()) {
+          const textsArray = conversationDoc.data().texts || [];
+          let updated = false;
           
-          if (conversationDoc.exists()) {
-            const textsArray = conversationDoc.data().texts || [];
-            let updated = false;
+          // Create a new array with viewed status updated
+          const updatedTexts = textsArray.map(msg => {
+            if (msg.sender === selectedFriend && !msg.viewed) {
+              updated = true;
+              return { ...msg, viewed: true };
+            }
+            return msg;
+          });
+          
+          if (updated) {
+            // Update messages first
+            await updateDoc(conversationRef, { texts: updatedTexts });
+
+            // Now update friends order
+            const userRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userRef);
             
-            // Create a new array with viewed status updated
-            const updatedTexts = textsArray.map(msg => {
-              if (msg.sender === selectedFriend && !msg.viewed) {
-                updated = true;
-                return { ...msg, viewed: true };
+            if (userDoc.exists()) {
+              const currentFriends = userDoc.data().friends || [];
+              
+              // Only update if friend exists and isn't already first
+              if (currentFriends.includes(selectedFriend)) {
+                if (currentFriends[0] !== selectedFriend) {
+                  // Create new array with friend at top
+                  const filteredFriends = currentFriends.filter(id => id !== selectedFriend);
+                  const newFriends = [selectedFriend, ...filteredFriends];
+                  
+                  // Update Firestore
+                  await updateDoc(userRef, { friends: newFriends });
+                }
               }
-              return msg;
-            });
-            
-            // Only update if there were unread messages
-            if (updated) {
-              await updateDoc(conversationRef, {
-                texts: updatedTexts
-              });
             }
           }
-        } catch (error) {
-          console.error("Error marking messages as viewed:", error);
         }
+      } catch (error) {
+        console.error("Error processing messages:", error);
       }
-    };
-    
-    markMessagesAsViewed();
-  }, [selectedFriend, messages]);
+    }
+  };
+  
+  markMessagesAsViewed();
+}, [selectedFriend, messages]);
 
   // useEffect to fetch messages for either selectedFriend or selectedGroup
   useEffect(() => {
     let unsubscribe = () => {};
+    
     
     const fetchMessages = async () => {
       
@@ -90,16 +111,16 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
           setMessages([]);
           return;
         }
+
         
         // Set up a real-time listener for the conversation document
-        unsubscribe = onSnapshot(conversationRef, async (doc) => {
+        unsubscribe = onSnapshot(conversationRef, async (docSnap) => {
           // Only process if this is still the current conversation
           if (conversationId === currentConversationIdRef.current) {
-            if (doc.exists()) {
+            if (docSnap.exists()) {
               // Get the `texts` array from the document
-              const texts = doc.data().texts || [];
-              
-              // Format the messages
+              const texts = docSnap.data().texts || [];
+            
               const formattedMessages = texts.map((msg) => {
                 let timestamp;
                 if (msg.timestamp?.toDate) {
@@ -137,6 +158,8 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     // Clean up the listener when the component unmounts or selected conversation changes
     return () => unsubscribe();
   }, [selectedFriend, selectedGroup, friendUsernames]);
+
+
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -257,13 +280,15 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     }
   };
 
-  // 9) Handle file selection
-  const handleImageChange = (e) => {
-    if (e.target.files[0]) {
-      console.log("File selected:", e.target.files[0]);
-      setImageFile(e.target.files[0]);
-    }
-  };
+ // Modify handleImageChange to create preview
+const handleImageChange = (e) => {
+  if (e.target.files[0]) {
+    const file = e.target.files[0];
+    console.log("File selected:", file);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file)); // Create object URL for preview
+  }
+};
 
   // 10) Upload image and send as a message
   // 10) Upload image and send as a message
@@ -340,7 +365,19 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
     }
   };
 
-  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, imageFile };
+  // Update cancel handler to clear preview
+const handleCancelImage = () => {
+  setImageFile(null);
+  if (imagePreview) {
+    URL.revokeObjectURL(imagePreview); // Clean up memory
+    setImagePreview(null);
+  }
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+};
+
+  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview };
 };
 
 export default useMessages;

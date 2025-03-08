@@ -12,6 +12,8 @@ const FriendsList = ({
   unreadMessages,
   setShowAddGroupModal,
   setUnreadMessages,
+  activeTab,
+  setActiveTab,
   // New props for groups
   groups,
   groupNames,
@@ -19,7 +21,6 @@ const FriendsList = ({
   selectedGroup
 }) => {
 
-    const [activeTab, setActiveTab] = useState("friends");
   return (
     <div className="friends-list">
       <h3 className="username">{userUsername}</h3>
@@ -53,7 +54,7 @@ const FriendsList = ({
   <div className={`tab-pane ${activeTab === "friends" ? "active" : ""}`}>
     <ul className="friends-container">
       {friends && friends.length > 0 ? (
-        [...friends].reverse().map((friendId, index) => (
+        [...friends].map((friendId, index) => (
           <li
             key={index}
             onClick={() => {

@@ -42,8 +42,9 @@ const HomePage = () => {
   // Custom hooks
   const { user } = useAuth();
   const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
-          newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest } = useFriends(setShowFriendRequestModal);
-  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, imageFile } = useMessages(
+          newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
+        activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
+  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview } = useMessages(
     selectedFriend,
     selectedGroup,
     friendUsernames, 
@@ -119,6 +120,8 @@ const HomePage = () => {
         groups = {groups}
         groupNames = {groupNames}
         handleGroupClick = {handleGroupClick}
+        activeTab = {activeTab}
+        setActiveTab = {setActiveTab}
       />
       
 
@@ -135,7 +138,10 @@ const HomePage = () => {
         handleSendMessage={handleSendMessage}
         handleImageChange = {handleImageChange}
         handleUploadImage = {handleUploadImage}
+        handleCancelImage={handleCancelImage}
         imageFile={imageFile}
+        imagePreview={imagePreview}
+        fileInputRef={fileInputRef}
         setShowDeleteMessageModal={setShowDeleteMessageModal}
         setDeletedMessageIndex={setDeletedMessageIndex}
       />

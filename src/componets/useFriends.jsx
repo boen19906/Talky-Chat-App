@@ -18,6 +18,7 @@ const useFriends = (setShowFriendRequestModal) => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupNames, setGroupNames] = useState([]);
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+  const [activeTab, setActiveTab] = useState("friends");
   
   
 
@@ -423,6 +424,8 @@ const useFriends = (setShowFriendRequestModal) => {
         texts: [],
         lastUpdated: serverTimestamp()
       });
+
+      setActiveTab("groups");
   
       return groupId;
     } catch (error) {
@@ -462,7 +465,9 @@ const useFriends = (setShowFriendRequestModal) => {
     setGroups,
     groupNames,
     setGroupNames,
-    createGroup
+    createGroup,
+    activeTab,
+    setActiveTab
   };
 };
 

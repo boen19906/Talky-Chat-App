@@ -14,7 +14,10 @@ const ChatArea = ({
     handleSendMessage,
     handleImageChange,
     handleUploadImage,
+    handleCancelImage,
     imageFile,
+    imagePreview,
+    fileInputRef,
     setShowDeleteMessageModal,
     setDeletedMessageIndex
 }) => {
@@ -101,6 +104,7 @@ const ChatArea = ({
                             messages={messages}
                             setShowDeleteMessageModal={setShowDeleteMessageModal}
                             setDeletedMessageIndex={setDeletedMessageIndex}
+                            isGroup={true}
                             
                         />
                     </div>
@@ -110,7 +114,10 @@ const ChatArea = ({
                         handleSendMessage={handleSendMessage}
                         handleImageChange={handleImageChange}
                         handleUploadImage={handleUploadImage}
+                        handelCancelImage={handleCancelImage}
                         imageFile={imageFile}
+                        fileInputRef={fileInputRef}
+                        imagePreview={imagePreview}
                     />
                 </>
             ) : selectedFriend ? (
@@ -126,6 +133,7 @@ const ChatArea = ({
                             messages={messages}
                             setShowDeleteMessageModal={setShowDeleteMessageModal}
                             setDeletedMessageIndex={setDeletedMessageIndex}
+                            isGroup={false}
                         />
                     </div>
                     <MessageInput
@@ -134,7 +142,10 @@ const ChatArea = ({
                         handleSendMessage={handleSendMessage}
                         handleImageChange={handleImageChange}
                         handleUploadImage={handleUploadImage}
+                        handleCancelImage={handleCancelImage}
                         imageFile={imageFile}
+                        fileInputRef={fileInputRef}
+                        imagePreview={imagePreview}
                     />
                 </>
             ) : (
