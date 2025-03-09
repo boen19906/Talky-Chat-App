@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { doc, getDoc, updateDoc, setDoc, arrayUnion, serverTimestamp, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, getDocs, updateDoc, setDoc, arrayUnion, serverTimestamp, onSnapshot, collection, query, where } from "firebase/firestore";
 import { auth, db, storage } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
+import OpenAI from 'openai';
 
-const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMessageIndex) => {
+const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMessageIndex, userUsername) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -12,6 +13,13 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const currentConversationIdRef = useRef(null);
+  const [friendToTop, setFriendToTop] = useState(false);
+
+  const openai = new OpenAI({
+    baseURL: "https://api.deepseek.com",
+    apiKey: "sk-2fe6222bedf54239871cf7f3946d1fa7",
+    dangerouslyAllowBrowser: true,
+  });
 
   // Update currentConversationIdRef whenever selectedFriend or selectedGroup changes
   useEffect(() => {
@@ -64,13 +72,17 @@ useEffect(() => {
               
               // Only update if friend exists and isn't already first
               if (currentFriends.includes(selectedFriend)) {
-                if (currentFriends[0] !== selectedFriend) {
-                  // Create new array with friend at top
+                setFriendToTop(true);
+                console.log("friends on top");
+                if (currentFriends[currentFriends.length - 1] !== selectedFriend) {
+                  // Create new array with friend at bottom
                   const filteredFriends = currentFriends.filter(id => id !== selectedFriend);
-                  const newFriends = [selectedFriend, ...filteredFriends];
+                  const newFriends = [...filteredFriends, selectedFriend];
                   
                   // Update Firestore
                   await updateDoc(userRef, { friends: newFriends });
+
+                  
                 }
               }
             }
@@ -161,6 +173,101 @@ useEffect(() => {
   }, [selectedFriend, selectedGroup, friendUsernames]);
 
 
+  useEffect(() => {
+    
+    let unsubscribe = () => {};
+    let hoodGPTUserId = null;
+    let timeoutId = null;
+    const processedMessages = new Set();
+    let isProcessing = false;
+  
+    const initializeHoodGPT = async () => {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', 'HoodGPT'));
+      const querySnapshot = await getDocs(q);
+      hoodGPTUserId = querySnapshot.docs[0]?.id;
+    };
+  
+    const handleHoodGPTMessages = (user) => {
+      if (!selectedFriend || selectedFriend !== hoodGPTUserId) return;
+  
+      const conversationId = [user.uid, hoodGPTUserId].sort().join('_');
+      const convoRef = doc(db, 'messages', conversationId);
+  
+      unsubscribe = onSnapshot(convoRef, async (docSnap) => {
+        if (!docSnap.exists() || isProcessing) return;
+  
+        // Get current messages and check last sender
+        const texts = docSnap.data().texts || [];
+        const lastMessage = texts[texts.length - 1];
+        
+        // Only respond if last message is from user
+        if (!lastMessage || lastMessage.sender !== user.uid) return;
+  
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(async () => {
+          try {
+            isProcessing = true;
+            const unprocessed = texts.filter(msg => 
+              msg.sender === user.uid &&
+              !processedMessages.has(msg.timestamp)
+            );
+  
+            if (unprocessed.length === 0) return;
+  
+            // Mark messages as processed
+            unprocessed.forEach(msg => processedMessages.add(msg.timestamp));
+  
+            // Get combined message content
+            const combinedContent = unprocessed
+              .map(msg => msg.text)
+              .join(" [NEXT MESSAGE] ");
+  
+            // Generate response
+            const completion = await openai.chat.completions.create({
+              messages: [{
+                role: 'user',
+                content: `ROLEPLAY AS a inner city gangster named HoodGPT. You are violent, angry, and curse a lot. Don't cesnor your curse words with "*".
+                 This your boss and fellow gangster ${userUsername} This is the context:\n${combinedContent} \nnow respond in under 30 words as HoodGPT:`
+              }],
+              model: 'deepseek-chat',
+              max_tokens: 150
+            });
+  
+            // Add bot response
+            await updateDoc(convoRef, {
+              texts: arrayUnion({
+                sender: hoodGPTUserId,
+                text: completion.choices[0].message.content,
+                timestamp: new Date().toISOString(),
+                viewed: false
+              }),
+              lastUpdated: serverTimestamp()
+            });
+  
+            processedMessages.clear();
+          } catch (error) {
+            console.error('HoodGPT error:', error);
+            unprocessed.forEach(msg => processedMessages.delete(msg.timestamp));
+          } finally {
+            isProcessing = false;
+          }
+        }, 2000); // 2-second debounce
+      });
+    };
+  
+    const user = auth.currentUser;
+    if (user) {
+      initializeHoodGPT().then(() => handleHoodGPTMessages(user));
+    }
+  
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+      isProcessing = false;
+      processedMessages.clear();
+    };
+  }, [selectedFriend]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -386,7 +493,7 @@ const handleCancelImage = () => {
   }
 };
 
-  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading };
+  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading, friendToTop, setFriendToTop };
 };
 
 export default useMessages;

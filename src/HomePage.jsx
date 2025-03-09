@@ -41,17 +41,21 @@ const HomePage = () => {
 
   // Custom hooks
   const { user } = useAuth();
+  const { userUsername } = useUsername();
   const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
-  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading } = useMessages(
+  const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading,
+    friendToTop, setFriendToTop
+   } = useMessages(
     selectedFriend,
     selectedGroup,
     friendUsernames, 
-    deletedMessageIndex
+    deletedMessageIndex,
+    userUsername
   );
   const { unreadMessages, setUnreadMessages } = useUnreadMessages(friends, selectedFriend, isNewLogin, audioRef);
-  const { userUsername } = useUsername();
+
 
   useEffect(() => {
     // Reset 'isNewLogin' after 3 seconds
@@ -122,6 +126,8 @@ const HomePage = () => {
         handleGroupClick = {handleGroupClick}
         activeTab = {activeTab}
         setActiveTab = {setActiveTab}
+        friendToTop={friendToTop}
+        setFriendToTop={setFriendToTop}
       />
       
 

@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import { React, useState, useRef, useEffect } from "react";
 
 const MessageInput = ({
   message,
@@ -12,6 +12,21 @@ const MessageInput = ({
   imagePreview,
   isLoading
 }) => {
+  const inputRef = useRef(null);
+  // Add event listener for keydown events
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (inputRef.current && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        inputRef.current.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
   return (
     <form onSubmit={handleSendMessage} className="chat-input">
       <div className="file-upload-wrapper">
@@ -63,6 +78,7 @@ const MessageInput = ({
         <>
           <input
             type="text"
+            ref={inputRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."

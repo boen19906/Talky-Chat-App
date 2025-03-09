@@ -227,63 +227,87 @@ const useFriends = (setShowFriendRequestModal) => {
   }, [friendRequested]);
 
   const handleAddFriendSubmit = async () => {
-    
     if (newFriend.trim()) {
-       
       try {
         const user = auth.currentUser;
+        if (!user) return;
   
-        if (user) {
-         
-          // Look up the friend by their username
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("username", "==", newFriend));
-          const querySnapshot = await getDocs(q);
-  
-          if (querySnapshot.empty) {
-            setError("User not found. Please check the username and try again.");
-            return;
-          }
-  
-          // Get the friend's user ID and document reference
-          const friendDoc = querySnapshot.docs[0];
-          const friendId = friendDoc.id;
-          const friendDocRef = doc(db, "users", friendId);
-  
-          // Check if already friends
-          if (friends.includes(friendId)) {
-            setError("You are already friends with this user.");
-            return;
-          }
-  
-          // Check if already sent a request
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const userData = userDoc.data();
+        // Special case for adding HoodGPT
+        if (newFriend.trim().toLowerCase() === "hoodgpt") {
+          const hoodGPTUserId = "ID9HUGYXXYRmK2hQv5rtomM2ren2";
           
-          if (userData.sentFriendRequests && userData.sentFriendRequests.includes(friendId)) {
-            setError("Friend request already sent.");
+          // Check if already friends
+          if (friends.includes(hoodGPTUserId)) {
+            setError("You're already connected with HoodGPT");
             return;
           }
   
-          // Add request to the friend's friendRequests array
-          await updateDoc(friendDocRef, {
-            friendRequests: arrayUnion(user.uid)
-          });
-  
-          // Add to current user's sentFriendRequests array
+          // Add HoodGPT to user's friends
           const userDocRef = doc(db, "users", user.uid);
           await updateDoc(userDocRef, {
-            sentFriendRequests: arrayUnion(friendId)
+            friends: arrayUnion(hoodGPTUserId)
           });
+  
+          // Create messages document
+          const convoId = [user.uid, hoodGPTUserId].sort().join('_');
+          const convoRef = doc(db, "messages", convoId);
+          
+          // Initialize conversation if it doesn't exist
+          if (!(await getDoc(convoRef)).exists()) {
+            await setDoc(convoRef, {
+              participants: [user.uid, hoodGPTUserId],
+              texts: [],
+              lastUpdated: serverTimestamp()
+            });
+          }
   
           setNewFriend("");
           setError(null);
-          
-         
+          return;
         }
+  
+        // Original logic for normal friends
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", newFriend));
+        const querySnapshot = await getDocs(q);
+  
+        if (querySnapshot.empty()) {
+          setError("User not found. Please check the username and try again.");
+          return;
+        }
+  
+        const friendDoc = querySnapshot.docs[0];
+        const friendId = friendDoc.id;
+        const friendDocRef = doc(db, "users", friendId);
+  
+        if (friends.includes(friendId)) {
+          setError("You are already friends with this user.");
+          return;
+        }
+  
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        
+        if (userData.sentFriendRequests?.includes(friendId)) {
+          setError("Friend request already sent.");
+          return;
+        }
+  
+        await updateDoc(friendDocRef, {
+          friendRequests: arrayUnion(user.uid)
+        });
+  
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, {
+          sentFriendRequests: arrayUnion(friendId)
+        });
+  
+        setNewFriend("");
+        setError(null);
+  
       } catch (error) {
-        setError(`Error sending friend request: ${error.message}`);
-        console.error("Error sending friend request:", error);
+        setError(`Error: ${error.message}`);
+        console.error("Friend request error:", error);
       }
     }
   };

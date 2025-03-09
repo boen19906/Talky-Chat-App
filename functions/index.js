@@ -1,19 +1,84 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import admin from 'firebase-admin';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import firebaseFunctions from 'firebase-functions';
 
-//const {onRequest} = require("firebase-functions/v2/https");
-//const logger = require("firebase-functions/logger");
+const { logger } = firebaseFunctions;
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+admin.initializeApp();
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+export const scheduledClearMessages = onSchedule({
+  schedule: '0 8 * * *',
+  timeZone: 'America/Los_Angeles',
+}, async () => {
+  try {
+    const db = admin.firestore();
+    const messagesRef = db.collection('messages');
+    const snapshot = await messagesRef.get();
+
+    if (snapshot.empty) {
+      logger.log('No messages found.');
+      return;
+    }
+
+    const batchSize = 500;
+    const batches = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+
+    snapshot.docs.forEach((doc) => {
+      // Update the document to clear the 'texts' array
+      currentBatch.update(doc.ref, { 
+        texts: [],
+        // Optional: Add a lastCleared timestamp
+        lastCleared: admin.firestore.FieldValue.serverTimestamp() 
+      });
+      operationCount++;
+
+      if (operationCount % batchSize === 0) {
+        batches.push(currentBatch.commit());
+        currentBatch = db.batch();
+      }
+    });
+
+    if (operationCount % batchSize !== 0) {
+      batches.push(currentBatch.commit());
+    }
+
+    await Promise.all(batches);
+    logger.log(`Cleared texts in ${operationCount} messages successfully.`);
+  } catch (error) {
+    logger.error('Error clearing messages:', error);
+    throw error;
+  }
+});
+
+export const scheduledClearStorage = onSchedule({
+    schedule: '0 8 * * *', // 8:00 AM UTC = 12:00 AM PST
+    timeZone: 'America/Los_Angeles',
+  }, async () => {
+    try {
+      const bucket = admin.storage().bucket();
+      const [files] = await bucket.getFiles({ prefix: 'chatImages/' });
+  
+      if (files.length === 0) {
+        logger.log('No images found in chatImages folder.');
+        return;
+      }
+  
+      // Delete files in batches of 100
+      const batchSize = 100;
+      let deletedCount = 0;
+  
+      for (let i = 0; i < files.length; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        await Promise.all(batch.map(file => file.delete()));
+        deletedCount += batch.length;
+        logger.log(`Deleted ${batch.length} images (total: ${deletedCount})`);
+      }
+  
+      logger.log(`Successfully deleted ${deletedCount} images total.`);
+    } catch (error) {
+      logger.error('Error deleting images:', error);
+      throw error;
+    }
+  });

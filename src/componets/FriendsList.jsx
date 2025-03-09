@@ -1,4 +1,4 @@
-import {React, useState} from "react";
+import {React, useState, useRef, useEffect} from "react";
 
 
 const FriendsList = ({ 
@@ -18,9 +18,26 @@ const FriendsList = ({
   groups,
   groupNames,
   handleGroupClick,
-  selectedGroup
+  selectedGroup,
+  friendToTop,
+  setFriendToTop
 }) => {
 
+  const friendsListRef = useRef(null);
+
+  useEffect(() => {
+    if (friendToTop && friendsListRef.current) {
+      console.log("yo scrol");
+      // Scroll to top with smooth behavior
+      friendsListRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      // Reset the trigger after scrolling
+      setFriendToTop(false);
+    }
+  }, [friendToTop, friendsListRef]);
   return (
     <div className="friends-list">
       <h3 className="username">{userUsername}</h3>
@@ -50,11 +67,11 @@ const FriendsList = ({
       </div>
       
       {/* Tab content */}
-      <div className="tab-content">
+      <div className="tab-content" ref={friendsListRef}>
   <div className={`tab-pane ${activeTab === "friends" ? "active" : ""}`}>
-    <ul className="friends-container">
+    <ul className="friends-container" >
       {friends && friends.length > 0 ? (
-        [...friends].map((friendId, index) => (
+        [...friends].reverse().map((friendId, index) => (
           <li
             key={index}
             onClick={() => {
