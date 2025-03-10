@@ -117,17 +117,17 @@ const ChatArea = ({
                         />
                     </div>
                     <MessageInput
-                        message={message}
-                        setMessage={setMessage}
-                        handleSendMessage={handleSendMessage}
-                        handleImageChange={handleImageChange}
-                        handleUploadImage={handleUploadImage}
-                        handelCancelImage={handleCancelImage}
-                        imageFile={imageFile}
-                        fileInputRef={fileInputRef}
-                        imagePreview={imagePreview}
-                        isLoading={isLoading}
-                        modalOn={modalOn}
+                       message={message}
+                       setMessage={setMessage}
+                       handleSendMessage={handleSendMessage}
+                       handleImageChange={handleImageChange}
+                       handleUploadImage={handleUploadImage}
+                       handleCancelImage={handleCancelImage}
+                       imageFile={imageFile}
+                       fileInputRef={fileInputRef}
+                       imagePreview={imagePreview}
+                       isLoading={isLoading}
+                       modalOn={modalOn}
                     
                     />
                 </>

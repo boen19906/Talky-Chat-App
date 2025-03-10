@@ -81,7 +81,7 @@ const AddGroupMembersModal = ({
         <div className="friends-list-container">
           {friends && friends.length > 0 ? (
             <ul className="friends-select-list">
-              {friends.map((friendId) => (
+              {friends.reverse().map((friendId) => (
                 <li key={friendId} className="friend-select-item">
                   <label className="friend-select-label">
                     <div 

@@ -487,7 +487,8 @@ const handleImageChange = (e) => {
   };
 
   // Update cancel handler to clear preview
-const handleCancelImage = () => {
+const handleCancelImage = async () => {
+  console.log("canceling image");
   setImageFile(null);
   if (imagePreview) {
     URL.revokeObjectURL(imagePreview); // Clean up memory
