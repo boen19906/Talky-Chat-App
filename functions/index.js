@@ -7,7 +7,7 @@ const { logger } = firebaseFunctions;
 admin.initializeApp();
 
 export const scheduledClearMessages = onSchedule({
-  schedule: '0 8 * * *',
+  schedule: '0 0 * * *',
   timeZone: 'America/Los_Angeles',
 }, async () => {
   try {
@@ -53,7 +53,7 @@ export const scheduledClearMessages = onSchedule({
 });
 
 export const scheduledClearStorage = onSchedule({
-    schedule: '0 8 * * *', // 8:00 AM UTC = 12:00 AM PST
+    schedule: '0 0 * * *', 
     timeZone: 'America/Los_Angeles',
   }, async () => {
     try {

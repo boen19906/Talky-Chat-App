@@ -4,6 +4,7 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
+import HamburgerMenu from "./componets/HamburgerMenu";
 import FriendsList from "./componets/FriendsList";
 import ChatArea from "./componets/ChatArea";
 import useAuth from "./componets/useAuth";
@@ -20,6 +21,8 @@ import RequestSentModal from "./componets/RequestSentModal";
 import DeleteMessageModal from "./componets/DeleteMessageModal";
 import AddGroupModal from "./componets/AddGroupModal";
 import AddGroupMembersModal from "./componets/AddGroupMembersModal";
+import ImageModal from "./componets/ImageModal";
+import GamesModal from "./componets/GamesModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -32,12 +35,15 @@ const HomePage = () => {
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [showAddGroupMembers, setShowAddGroupMembers] = useState(false);
   const [showFriendRequestModal, setShowFriendRequestModal] = useState(false);
+  const [showGamesModal, setShowGamesModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [deletedMessageIndex, setDeletedMessageIndex] = useState(0);
   const [groupName, setGroupName] = useState("");
   const [newGroup, setNewGroup] = useState([]);
   const [error, setError] = useState("");
   const [isNewLogin, setIsNewLogin] = useState(true);
+  const [modalOn, setModalOn] = useState(false);
 
   // Custom hooks
   const { user } = useAuth();
@@ -46,7 +52,7 @@ const HomePage = () => {
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
   const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading,
-    friendToTop, setFriendToTop
+    friendToTop, setFriendToTop, isProcessing, selectedImage, setSelectedImage
    } = useMessages(
     selectedFriend,
     selectedGroup,
@@ -54,7 +60,7 @@ const HomePage = () => {
     deletedMessageIndex,
     userUsername
   );
-  const { unreadMessages, setUnreadMessages } = useUnreadMessages(friends, selectedFriend, isNewLogin, audioRef);
+  const { unreadMessages, setUnreadMessages } = useUnreadMessages(friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef);
 
 
   useEffect(() => {
@@ -78,9 +84,11 @@ const HomePage = () => {
 
   const handleAddFriend = () => {
     setShowAddFriendModal(true);
+    setModalOn(true);
   };
 
   const handleImageClick = () => {
+    console.log(showImageModal);
     setSelectedFriend(null);
     setSelectedGroup(null);
   };
@@ -90,6 +98,7 @@ const HomePage = () => {
     if (selectedFriend === friendId) {
       setFriendToRemove(friendId);
       setShowRemoveFriendModal(true);
+      setModalOn(true);
     } else {
       setSelectedFriend(friendId);
     }
@@ -108,7 +117,13 @@ const HomePage = () => {
   return (
     <div className="home-container">
       <audio ref={audioRef} src="/notf.mp3" preload="auto" />
-
+      {/*Hamburger Menu*/}
+      <HamburgerMenu
+        handleAddFriend={handleAddFriend}
+        setShowAddGroupModal={setShowAddGroupModal}
+        setShowGamesModal={setShowGamesModal}
+        setModalOn={setModalOn}
+      />
       {/* Friends List */}
       <FriendsList 
         userUsername={userUsername}
@@ -128,6 +143,8 @@ const HomePage = () => {
         setActiveTab = {setActiveTab}
         friendToTop={friendToTop}
         setFriendToTop={setFriendToTop}
+        setModalOn={setModalOn}
+        
       />
       
 
@@ -151,6 +168,11 @@ const HomePage = () => {
         isLoading={isLoading}
         setShowDeleteMessageModal={setShowDeleteMessageModal}
         setDeletedMessageIndex={setDeletedMessageIndex}
+        isProcessing = {isProcessing}
+        setSelectedImage = {setSelectedImage}
+        setShowImageModal={setShowImageModal}
+        modalOn={modalOn}
+        setModalOn={setModalOn}
       />
 
       {/* Logout Button */}
@@ -168,6 +190,7 @@ const HomePage = () => {
           newFriend = {newFriend}
           setNewFriend = {setNewFriend}
           setRequestSent={setRequestSent}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -177,6 +200,7 @@ const HomePage = () => {
           friendRequestedUsername = {friendRequestedUsername}
           handleFriendRequest = {handleFriendRequest}
           setShowFriendRequestModal={setShowFriendRequestModal}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -188,6 +212,7 @@ const HomePage = () => {
           setShowAddGroupModal={setShowAddGroupModal}
           setNewGroup={setNewGroup}
           setError={setError}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -205,6 +230,7 @@ const HomePage = () => {
           friends={friends}
           friendUsernames={friendUsernames}
           createGroup = {createGroup}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -214,6 +240,7 @@ const HomePage = () => {
           friendToRemove={friendToRemove}
           handleRemoveFriend={handleRemoveFriend}
           setShowRemoveFriendModal={setShowRemoveFriendModal}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -223,6 +250,7 @@ const HomePage = () => {
         groupToRemove = {groupToRemove}
         handleRemoveFromGroup = {handleRemoveFromGroup} 
         setShowRemoveGroupModal ={setShowRemoveGroupModal}
+        setModalOn={setModalOn}
         />
       }
 
@@ -230,12 +258,14 @@ const HomePage = () => {
         <LogoutModal 
           handlelogout={handlelogout}
           setShowlogoutModal={setShowlogoutModal}
+          setModalOn={setModalOn}
         />
       )}
 
       {requestSent && (
         <RequestSentModal 
           setRequestSent={setRequestSent}
+          setModalOn={setModalOn}
         />
       )}
 
@@ -243,6 +273,22 @@ const HomePage = () => {
         <DeleteMessageModal 
           handleDeleteMessage={handleDeleteMessage}
           setShowDeleteMessageModal={setShowDeleteMessageModal}
+          setModalOn={setModalOn}
+        />
+      )}
+
+      {showGamesModal && (
+        <GamesModal 
+          setShowGamesModal={setShowGamesModal}
+          setModalOn={setModalOn}
+        />
+      )}
+
+      {showImageModal && (
+        <ImageModal
+          selectedImage={selectedImage}
+          setShowImageModal={setShowImageModal}
+          setModalOn={setModalOn}
         />
       )}
     </div>

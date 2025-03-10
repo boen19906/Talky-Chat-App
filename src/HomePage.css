@@ -3,7 +3,7 @@
     display: flex;
     height: 100vh;
     background-color: #f5f5f5;
-    width: 80vw;
+    width: 85vw;
   }
 /*logo*/
 .logo {
@@ -14,6 +14,98 @@
     margin-top:5vh;
     cursor: pointer;
 
+}
+/*Hamburger Menu*/
+/* Container for the hamburger menu */
+.hamburger-menu-container {
+  position: fixed;
+  top: 20px;
+  left: 35px;
+  z-index: 1000;
+}
+
+/* Hamburger icon */
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 30px;
+  height: 24px;
+  cursor: pointer;
+}
+
+
+
+/* Bars of the hamburger icon */
+.bar {
+  width: 100%;
+  height: 3px;
+  background-color: #333;
+  transition: all 0.3s ease;
+}
+
+/* Transform the bars when the menu is open */
+.bar.open:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.bar.open:nth-child(2) {
+  opacity: 0;
+}
+
+.bar.open:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Menu content */
+.menu {
+  position: fixed;
+  top: 0;
+  left: -250px; /* Hide the menu off-screen by default */
+  width: 250px;
+  height: 100vh;
+  background-color: #f4f4f4;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: left 0.3s ease;
+}
+
+/* Show the menu when open */
+.menu.open {
+  left: 0;
+}
+
+.menu-icon {
+  font-size: 1.2rem;
+  color: #555;
+  min-width: 25px;
+}
+/* Menu list styling */
+.menu ul {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Changed from center */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  padding-top: 60px;
+  width: 100%; /* Ensure ul takes full menu width */
+}
+
+.menu ul li {
+  display: flex;
+  align-items: center;
+  width: 100%; /* Full width */
+  padding: 15px 25px; /* Increased horizontal padding */
+  font-size: 18px;
+  color: #333;
+  cursor: pointer;
+  box-sizing: border-box; /* Include padding in width */
+  gap: 15px; /* Space between icon and text */
+  transition: background-color 0.2s ease;
+}
+
+.menu ul li:hover {
+  background-color: #ddd;
 }
 /* Tab Navigation */
 .tab-navigation {
@@ -167,6 +259,7 @@
   
   /* Chat Area */
   .chat-area {
+    position: relative;
     width: 66.66%;
     display: flex;
     flex-direction: column;
@@ -360,7 +453,7 @@
 .logout-button {
     position: absolute;
     top: 5px;
-    right: 10px;
+    right: 3px;
     padding: 10px 20px;
     background-color: #e74c3c;
     color: white;
@@ -430,8 +523,13 @@
     background-color: white;
     padding: 20px;
     border-radius: 8px;
-    width: 300px;
+    /*width: 300px;*/
+    width:300px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal.game {
+    width: 600px;
   }
   
   .modal h3 {
@@ -455,6 +553,7 @@
   gap: 1rem;
   width: 100%;
   margin-top: 1.5rem;
+  
 }
 
 /* Base button styles */
@@ -462,6 +561,7 @@
   padding: 10px 20px;
   color: white;
   border: none;
+  
   border-radius: 4px;
   font-size: 16px;
   cursor: pointer;
@@ -472,24 +572,94 @@
 }
 
 /* Primary action button (right side) */
-.modal button:not(.cancel-button) {
+.modal .comfirm-button{
+  margin-top:0.25rem;
   background-color: #0096FF;
-  margin-left: auto;
   
   order: 2;
 }
 
-.modal button:not(.cancel-button):hover {
+.modal .button-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  justify-items: center;
+ 
+  margin-top: 1rem;
+}
+.cancel-button.game {
+  width: 250px;
+}
+.modal .comfirm-button.game{
+  width: 250px;
+}
+
+
+
+.modal button.comfirm-button:hover {
+  
   background-color: #005eff;
 }
 
-/* Cancel button (left side) */
-.modal .cancel-button {
+.modal {
+  margin-top:1rem;
+}
+
+
+
+
+.modal .cancel-button { 
+  margin-top:0.25rem;
   background-color: #e74c3c;
   order: 1;
 }
 
+
+
+
+
 .modal .cancel-button:hover {
+  background-color: #c0392b;
+}
+
+/*image*/
+.modal.image {
+  display:flex;
+  align-items:center;
+  justify-content: center;
+  position: relative;
+  max-width: 700px;
+  width: 90%;
+  background: transparent;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.modal-image {
+  width: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+.close-button:hover {
   background-color: #c0392b;
 }
 
@@ -521,7 +691,59 @@
   .error-message {
     animation: shake 0.6s ease-in-out;
   }
-
+  /*Games Modal*/
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .game-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid #e9ecef;
+  }
+  
+  .game-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: #fff;
+    border-color: #4dabf7;
+  }
+  
+  .game-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .game-box h4 {
+    margin: 0.5rem 0;
+    color: #212529;
+    font-size: 1.2rem;
+  }
+  
+  .game-box p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 640px) {
+    .modal {
+      min-width: 90%;
+      padding: 1.5rem;
+    }
+    
+    .games-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   /*Grp Chat*/
   .members-list {
     margin-top: 15px;
@@ -803,6 +1025,56 @@
   align-items: center;
   width: 100%;
   padding: 8px 0;
+}
+
+/*hoodgpt loading*/
+.typing-indicator {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #CC99FF;
+  padding: 8px 12px;
+  border-radius: 18px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: #007aff;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.typing-text {
+  color: #333;
+  font-size: 0.9rem;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { 
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
 }
   
   

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const AddGroupMembersModal = ({
   newGroup,
@@ -10,8 +10,23 @@ const AddGroupMembersModal = ({
   setGroupName,
   friends,
   friendUsernames,
-  createGroup
+  createGroup,
+  setModalOn
 }) => {
+  const modalRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowAddGroupMembers(false);
+        setModalOn(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [selectedFriends, setSelectedFriends] = useState([]);
 
   const handleCheckboxChange = (friendId) => {
@@ -45,17 +60,19 @@ const AddGroupMembersModal = ({
       setShowAddGroupMembers(false);
       setError("");
       setGroupName("");
+      setModalOn(false);
     }
   };
 
   const handleCancel = () => {
     setShowAddGroupMembers(false);
     setError("");
+    setModalOn(false);
   };
 
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" ref={modalRef}>
         <h2>Add Members to "{groupName}"</h2>
         <p>Select friends to add to your group:</p>
         

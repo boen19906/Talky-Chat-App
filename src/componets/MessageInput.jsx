@@ -10,23 +10,27 @@ const MessageInput = ({
   imageFile,
   fileInputRef,
   imagePreview,
-  isLoading
+  isLoading,
+  modalOn
 }) => {
   const inputRef = useRef(null);
   // Add event listener for keydown events
   useEffect(() => {
+    if (modalOn) return;
+  
     const handleKeyDown = (e) => {
       if (inputRef.current && !e.ctrlKey && !e.metaKey && !e.altKey) {
         inputRef.current.focus();
       }
     };
-
+  
     document.addEventListener('keydown', handleKeyDown);
-
+  
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [modalOn]);
+  
   return (
     <form onSubmit={handleSendMessage} className="chat-input">
       <div className="file-upload-wrapper">

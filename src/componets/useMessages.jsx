@@ -14,6 +14,8 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const fileInputRef = useRef(null);
   const currentConversationIdRef = useRef(null);
   const [friendToTop, setFriendToTop] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const openai = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -173,13 +175,15 @@ useEffect(() => {
   }, [selectedFriend, selectedGroup, friendUsernames]);
 
 
+
+
   useEffect(() => {
     
     let unsubscribe = () => {};
     let hoodGPTUserId = null;
     let timeoutId = null;
     const processedMessages = new Set();
-    let isProcessing = false;
+    
   
     const initializeHoodGPT = async () => {
       const usersRef = collection(db, 'users');
@@ -207,7 +211,7 @@ useEffect(() => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(async () => {
           try {
-            isProcessing = true;
+            setIsProcessing(true);
             const unprocessed = texts.filter(msg => 
               msg.sender === user.uid &&
               !processedMessages.has(msg.timestamp)
@@ -228,7 +232,8 @@ useEffect(() => {
               messages: [{
                 role: 'user',
                 content: `ROLEPLAY AS a inner city gangster named HoodGPT. You are violent, angry, and curse a lot. Don't cesnor your curse words with "*".
-                 This your boss and fellow gangster ${userUsername} This is the context:\n${combinedContent} \nnow respond in under 30 words as HoodGPT:`
+                 Don't keep repeating the same things, mix things up for example don't keep saying "yo..." and mix up things at the end too. This your boss and fellow gangster ${userUsername}  
+                 This is the context:\n${combinedContent} \nnow respond in under 30 words as HoodGPT, Do not, again DO NOT start your response with  "Yo ${userUsername}":`
               }],
               model: 'deepseek-chat',
               max_tokens: 150
@@ -250,7 +255,7 @@ useEffect(() => {
             console.error('HoodGPT error:', error);
             unprocessed.forEach(msg => processedMessages.delete(msg.timestamp));
           } finally {
-            isProcessing = false;
+            setIsProcessing(false);
           }
         }, 2000); // 2-second debounce
       });
@@ -264,7 +269,7 @@ useEffect(() => {
     return () => {
       clearTimeout(timeoutId);
       unsubscribe();
-      isProcessing = false;
+      setIsProcessing(false);
       processedMessages.clear();
     };
   }, [selectedFriend]);
@@ -493,7 +498,9 @@ const handleCancelImage = () => {
   }
 };
 
-  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading, friendToTop, setFriendToTop };
+  return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading, friendToTop, setFriendToTop
+    , isProcessing,selectedImage, setSelectedImage
+   };
 };
 
 export default useMessages;

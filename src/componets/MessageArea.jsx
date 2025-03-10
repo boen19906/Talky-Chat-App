@@ -1,6 +1,6 @@
 import React from "react";
 
-const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageIndex, isGroup }) => {
+const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageIndex, isGroup, setSelectedImage, setShowImageModal, setModalOn}) => {
   return (
     <>
   {messages.map((msg, index) => {
@@ -40,10 +40,15 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
           </strong>
           {msg.imageUrl ? (
             <img
-              src={msg.imageUrl}
-              alt="Uploaded"
-              style={{ maxWidth: "200px", margin: "8px 0" }}
-            />
+            src={msg.imageUrl}
+            alt="Uploaded"
+            style={{ 
+              maxWidth: "200px", 
+              margin: "8px 0", 
+              cursor: "pointer" 
+            }}
+            onClick={() => {setSelectedImage(msg.imageUrl); setShowImageModal(true);}}
+          />
           ) : (
             <span style={{ color: !isUser ? textColor : undefined }}>
               {msg.text}
@@ -67,6 +72,7 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
                 onClick={() => {
                   setShowDeleteMessageModal(true);
                   setDeletedMessageIndex(index);
+                  setModalOn(true);
                 }}
               >
                 <span className="dots">⋯</span>
@@ -77,6 +83,8 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
       </div>
     );
   })}
+
+
 </>
   );
 };

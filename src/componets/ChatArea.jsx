@@ -20,7 +20,12 @@ const ChatArea = ({
     fileInputRef,
     isLoading,
     setShowDeleteMessageModal,
-    setDeletedMessageIndex
+    setDeletedMessageIndex,
+    isProcessing,
+    setSelectedImage,
+    setShowImageModal,
+    modalOn,
+    setModalOn
 }) => {
     const chatMessagesRef = useRef(null);
 
@@ -106,7 +111,9 @@ const ChatArea = ({
                             setShowDeleteMessageModal={setShowDeleteMessageModal}
                             setDeletedMessageIndex={setDeletedMessageIndex}
                             isGroup={true}
-                            
+                            setSelectedImage={setSelectedImage}
+                            setShowImageModal={setShowImageModal}
+                            setModalOn={setModalOn}
                         />
                     </div>
                     <MessageInput
@@ -120,6 +127,8 @@ const ChatArea = ({
                         fileInputRef={fileInputRef}
                         imagePreview={imagePreview}
                         isLoading={isLoading}
+                        modalOn={modalOn}
+                    
                     />
                 </>
             ) : selectedFriend ? (
@@ -136,6 +145,9 @@ const ChatArea = ({
                             setShowDeleteMessageModal={setShowDeleteMessageModal}
                             setDeletedMessageIndex={setDeletedMessageIndex}
                             isGroup={false}
+                            setSelectedImage={setSelectedImage}
+                            setShowImageModal={setShowImageModal}
+                            setModalOn={setModalOn}
                         />
                     </div>
                     <MessageInput
@@ -149,6 +161,8 @@ const ChatArea = ({
                         fileInputRef={fileInputRef}
                         imagePreview={imagePreview}
                         isLoading={isLoading}
+                        modalOn={modalOn}
+                        
                     />
                 </>
             ) : (
@@ -156,6 +170,17 @@ const ChatArea = ({
                     <p>Select a friend or group to start chatting</p>
                 </div>
             )}
+
+{isProcessing && (
+      <div className="typing-indicator">
+        <div className="loading-dots">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
+        <span className="typing-text">HoodGPT Typing...</span>
+      </div>
+    )}
         </div>
     );
 };

@@ -20,7 +20,8 @@ const FriendsList = ({
   handleGroupClick,
   selectedGroup,
   friendToTop,
-  setFriendToTop
+  setFriendToTop,
+  setModalOn
 }) => {
 
   const friendsListRef = useRef(null);
@@ -45,7 +46,7 @@ const FriendsList = ({
       <button className="add-friend-button" onClick={handleAddFriend}>
         Add Friend
       </button>
-      <button className="add-group-button" onClick={() => setShowAddGroupModal(true)}>
+      <button className="add-group-button" onClick={() => {setShowAddGroupModal(true); setModalOn(true);}}>
         Add Group Chat
       </button>
 
@@ -103,11 +104,10 @@ const FriendsList = ({
           groups.map((groupId, index) => (
             <li
               key={groupId}
-              onClick={() => handleGroupClick(groupId)}
+              onClick={() => {handleGroupClick(groupId); setModalOn(true);}}
               className={`friend-list-item${selectedGroup === groupId ? "selected" : ""}`}
             >
              {groupNames[groupId] || "Loading..."}
-              
             </li>
           ))
         ) : (

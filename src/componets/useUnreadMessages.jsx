@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
-const useUnreadMessages = (friends, selectedFriend, isNewLogin, audioRef) => {
+const useUnreadMessages = (friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef) => {
   const [unreadMessages, setUnreadMessages] = useState({});
   const prevUnreadCounts = useRef({});
+  const prevUnreadCountsGroups = useRef({}); 
   
 
   useEffect(() => {
@@ -74,11 +75,15 @@ const useUnreadMessages = (friends, selectedFriend, isNewLogin, audioRef) => {
   
       unsubscribeMap[friendId] = unsubscribe;
     });
+
+    
   
     return () => {
       Object.values(unsubscribeMap).forEach((fn) => fn());
     };
   }, [friends, selectedFriend, isNewLogin]);
+
+  
 
 
   

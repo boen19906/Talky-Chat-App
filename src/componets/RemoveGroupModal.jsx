@@ -1,14 +1,29 @@
-import React from "react";
+import {React, useEffect, useRef} from "react";
 
 const RemoveGroupModal = ({ 
   groupNames, 
   groupToRemove, 
   handleRemoveFromGroup, 
-  setShowRemoveGroupModal 
+  setShowRemoveGroupModal ,
+  setModalOn
 }) => {
+  const modalRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowRemoveGroupModal(false);
+        setModalOn(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" ref={modalRef}>
         <h3>Remove Group</h3>
         <p>
           Are you sure you want to leave{" "}
@@ -16,8 +31,9 @@ const RemoveGroupModal = ({
         </p>
         <div className="modal-buttons">
           <button
-            onClick={() => {handleRemoveFromGroup()
-                 setShowRemoveGroupModal(false)}}
+            onClick={() => {handleRemoveFromGroup();
+                 setShowRemoveGroupModal(false);
+                 setModalOn(false);}}
             className="confirm-button"
           >
             Yes, leave
@@ -25,6 +41,7 @@ const RemoveGroupModal = ({
           <button
             onClick={() => {
               setShowRemoveGroupModal(false);
+              setModalOn(false);
             }}
             className="cancel-button"
           >
