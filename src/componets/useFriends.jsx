@@ -226,8 +226,10 @@ const useFriends = (setShowFriendRequestModal) => {
     fetchFriendRequestUsername();
   }, [friendRequested]);
 
-  const handleAddFriendSubmit = async () => {
+  const handleAddFriendSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission behavior
     if (newFriend.trim()) {
+      console.log("hello");
       try {
         const user = auth.currentUser;
         if (!user) return;
@@ -268,10 +270,11 @@ const useFriends = (setShowFriendRequestModal) => {
   
         // Original logic for normal friends
         const usersRef = collection(db, "users");
-        const q = query(usersRef, where("username", "==", newFriend));
+        const q = query(usersRef, where("username", "==", newFriend.trim()));
         const querySnapshot = await getDocs(q);
-  
-        if (querySnapshot.empty()) {
+
+        // CORRECTED: Use .empty property instead of .empty()
+        if (querySnapshot.empty) {
           setError("User not found. Please check the username and try again.");
           return;
         }

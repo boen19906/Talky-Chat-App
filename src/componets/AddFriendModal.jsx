@@ -36,11 +36,11 @@ const AddFriendModal = ({ handleAddFriendSubmit, setShowAddFriendModal, error, s
     <div className="modal-overlay">
       <div className="modal" ref={modalRef}>
         <h3>Send Friend Request</h3>
-        <form onSubmit={() => {handleAddFriendSubmit()
-            setShowAddFriendModal(false)
-            setRequestSent(true)
-            setModalOn(false)
-
+        <form onSubmit={(e) => {
+            handleAddFriendSubmit(e); // Pass event to handler
+            setShowAddFriendModal(false);
+            setRequestSent(true);
+            setModalOn(false);
         }}>
           <input
             type="text"
