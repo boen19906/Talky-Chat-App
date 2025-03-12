@@ -65,6 +65,7 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
             {msg.reaction && (
               <div 
                 className="message-reaction" 
+                title={msg.sender}
                 onClick={() => {
                   setShowReactionsModal(true);
                   setModalOn(true);

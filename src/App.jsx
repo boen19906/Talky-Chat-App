@@ -26,6 +26,7 @@ function App() {
     return <div>Loading...</div>;
   }
 
+
   return (
     <Router>
       <div className="App">
@@ -41,6 +42,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    
   );
 }
 

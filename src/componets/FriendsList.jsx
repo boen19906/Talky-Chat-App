@@ -57,13 +57,13 @@ const FriendsList = ({
           className={activeTab === "friends" ? "active" : ""}
           onClick={() => setActiveTab("friends")}
         >
-          Friends
+          <span>Friends ({friends.length})</span>
         </button>
         <button 
           className={activeTab === "groups" ? "active" : ""}
           onClick={() => setActiveTab("groups")}
         >
-          Groups
+          <span>Groups ({groups.length})</span>
         </button>
       </div>
       

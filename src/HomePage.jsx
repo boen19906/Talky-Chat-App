@@ -24,6 +24,7 @@ import AddGroupMembersModal from "./componets/AddGroupMembersModal";
 import ImageModal from "./componets/ImageModal";
 import GamesModal from "./componets/GamesModal";
 import ReactionsModal from "./componets/ReactionsModal";
+import EmojiModal from "./componets/EmojiModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ const HomePage = () => {
   const [showGamesModal, setShowGamesModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [showEmojiModal, setShowEmojiModal] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [deletedMessageIndex, setDeletedMessageIndex] = useState(0);
   const [groupName, setGroupName] = useState("");
@@ -177,6 +179,7 @@ const HomePage = () => {
         setModalOn={setModalOn}
         setShowReactionsModal={setShowReactionsModal}
         setReactionIndex={setReactionIndex}
+        setShowEmojiModal={setShowEmojiModal}
       />
 
       {/* Logout Button */}
@@ -300,6 +303,14 @@ const HomePage = () => {
         <ReactionsModal
           setShowReactionsModal={setShowReactionsModal}
           handleSendReaction={handleSendReaction}
+        />
+      )}
+
+      {showEmojiModal && (
+        <EmojiModal
+          setShowEmojiModal={setShowEmojiModal}
+          message={message}
+          setMessage={setMessage}
         />
       )}
     </div>

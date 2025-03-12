@@ -419,6 +419,22 @@
   background-color: #e6e6e6;
 }
 
+.emoji-button {
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.emoji-button:hover {
+  background-color: #e6e6e6;
+}
+
 .send-button {
   padding: 8px 16px;
   margin-left:1rem;
@@ -1101,9 +1117,12 @@
 }
 
 .emoji-container {
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 5 emojis per row */
+  gap: 10px; /* Space between buttons */
+  justify-content: center;
+  max-width: 300px; /* Adjust based on your needs */
+  margin: auto;
 }
 
 .emoji-button {

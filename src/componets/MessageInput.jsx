@@ -1,4 +1,6 @@
 import { React, useState, useRef, useEffect } from "react";
+import { IoImagesSharp } from "react-icons/io5";
+import { CiFaceSmile } from "react-icons/ci";
 
 const MessageInput = ({
   message,
@@ -11,7 +13,8 @@ const MessageInput = ({
   fileInputRef,
   imagePreview,
   isLoading,
-  modalOn
+  modalOn,
+  setShowEmojiModal
 }) => {
   const inputRef = useRef(null);
   // Add event listener for keydown events
@@ -43,8 +46,17 @@ const MessageInput = ({
           className="hidden-file-input"
         />
         <label htmlFor="file-upload" className="file-upload-button">
-          Attach
+        <IoImagesSharp size={24} />
         </label>
+      </div>
+
+      <div className="emoji-wrapper">
+        <label className="emoji-button" onClick={() => {
+              setShowEmojiModal(true);
+            }}>
+        <CiFaceSmile size={24}/>
+        </label>
+        
       </div>
 
       {imageFile ? (
