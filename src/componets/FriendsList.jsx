@@ -101,7 +101,7 @@ const FriendsList = ({
           {/* Your groups content here */}
           <ul className="friends-container">
         {groups && groups.length > 0 ? (
-          groups.reverse().map((groupId, index) => (
+          groups.map((groupId, index) => (
             <li
               key={groupId}
               onClick={() => {handleGroupClick(groupId); setModalOn(true);}}

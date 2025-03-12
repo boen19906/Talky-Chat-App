@@ -23,6 +23,7 @@ import AddGroupModal from "./componets/AddGroupModal";
 import AddGroupMembersModal from "./componets/AddGroupMembersModal";
 import ImageModal from "./componets/ImageModal";
 import GamesModal from "./componets/GamesModal";
+import ReactionsModal from "./componets/ReactionsModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const HomePage = () => {
   const [showFriendRequestModal, setShowFriendRequestModal] = useState(false);
   const [showGamesModal, setShowGamesModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [deletedMessageIndex, setDeletedMessageIndex] = useState(0);
   const [groupName, setGroupName] = useState("");
@@ -52,7 +54,7 @@ const HomePage = () => {
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
   const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading,
-    friendToTop, setFriendToTop, isProcessing, selectedImage, setSelectedImage
+    friendToTop, setFriendToTop, isProcessing, selectedImage, setSelectedImage,handleSendReaction, reactionIndex, setReactionIndex
    } = useMessages(
     selectedFriend,
     selectedGroup,
@@ -173,6 +175,8 @@ const HomePage = () => {
         setShowImageModal={setShowImageModal}
         modalOn={modalOn}
         setModalOn={setModalOn}
+        setShowReactionsModal={setShowReactionsModal}
+        setReactionIndex={setReactionIndex}
       />
 
       {/* Logout Button */}
@@ -289,6 +293,13 @@ const HomePage = () => {
           selectedImage={selectedImage}
           setShowImageModal={setShowImageModal}
           setModalOn={setModalOn}
+        />
+      )}
+
+      {showReactionsModal && (
+        <ReactionsModal
+          setShowReactionsModal={setShowReactionsModal}
+          handleSendReaction={handleSendReaction}
         />
       )}
     </div>

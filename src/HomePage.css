@@ -287,6 +287,9 @@
     word-wrap: break-word; /* Allows long words to wrap */
     
   }
+  .message-content {
+    position:relative;
+  }
   
   
   
@@ -516,7 +519,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-  }
+    z-index: 1000; /* Ensure it's higher than other elements */
+}
+
   
   /* Modal */
   .modal {
@@ -576,7 +581,7 @@
   margin-top:0.25rem;
   background-color: #0096FF;
   
-  order: 2;
+  order: 1;
 }
 
 .modal .button-container {
@@ -611,7 +616,7 @@
 .modal .cancel-button { 
   margin-top:0.25rem;
   background-color: #e74c3c;
-  order: 1;
+  order: 2;
 }
 
 
@@ -1077,4 +1082,95 @@
   }
 }
   
+
+/*emoji reactions*/
+.reactions-modal {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.reactions-modal h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #333;
+  font-size: 16px;
+}
+
+.emoji-container {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+.emoji-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.emoji-button:hover {
+  transform: scale(1.2);
+  background-color: #f0f0f0;
+}
+
+.emoji-button.selected {
+  background-color: #e6f7ff;
+}
+
+.reactions-modal .remove-button {
+  background-color: #ff4d4d; /* Red color for emphasis */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 150px;
+}
+
+.reactions-modal .remove-button:hover {
+  background-color: #cc0000; /* Darker red on hover */
+}
+
+.reactions-modal .remove-button:active {
+  transform: scale(0.95); /* Slight shrink on click */
+}
+
+.reactions-modal .remove-button:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(255, 77, 77, 0.8);
+}
+
+.message-reaction {
+  position: absolute;
+    bottom: -10px;
+    right: 5px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 10;
+    border: 1px solid #e0e0e0;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.message-reaction:hover {
+  transform: scale(1.2);
+}
+
   

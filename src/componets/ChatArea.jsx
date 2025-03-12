@@ -25,7 +25,9 @@ const ChatArea = ({
     setSelectedImage,
     setShowImageModal,
     modalOn,
-    setModalOn
+    setModalOn,
+    setShowReactionsModal,
+    setReactionIndex
 }) => {
     const chatMessagesRef = useRef(null);
 
@@ -114,6 +116,8 @@ const ChatArea = ({
                             setSelectedImage={setSelectedImage}
                             setShowImageModal={setShowImageModal}
                             setModalOn={setModalOn}
+                            setShowReactionsModal={setShowReactionsModal}
+                            setReactionIndex={setReactionIndex}
                         />
                     </div>
                     <MessageInput
@@ -148,6 +152,8 @@ const ChatArea = ({
                             setSelectedImage={setSelectedImage}
                             setShowImageModal={setShowImageModal}
                             setModalOn={setModalOn}
+                            setShowReactionsModal={setShowReactionsModal}
+                            setReactionIndex={setReactionIndex}
                         />
                     </div>
                     <MessageInput

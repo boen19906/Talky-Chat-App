@@ -16,6 +16,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const [friendToTop, setFriendToTop] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [reactionIndex, setReactionIndex] = useState(0);
 
   const openai = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -153,7 +154,8 @@ useEffect(() => {
                   sender: msg.sender === user.uid ? "You" : friendUsernames[msg.sender] || "Unknown",
                   timestamp: timestamp,
                   viewed: selectedFriend ? msg.viewed : undefined, // Only track viewed status for direct messages
-                  imageUrl: msg.imageUrl || null
+                  imageUrl: msg.imageUrl || null,
+                  reaction: msg.reaction || null
                 };
               });
 
@@ -449,6 +451,7 @@ const handleImageChange = (e) => {
         imageUrl: downloadURL,
         timestamp: new Date().toISOString(),
         viewed: false,
+        reaction: ""
       };
   
       const conversationRef = doc(db, "messages", conversationId);
@@ -499,8 +502,55 @@ const handleCancelImage = async () => {
   }
 };
 
+const handleSendReaction = async (emoji) => {
+  const user = auth.currentUser;
+  try {
+    if (!user || !selectedFriend) return;
+    console.log(emoji);
+    
+    // Create the conversation ID
+    let messageRef;
+
+    const conversationId = [user.uid, selectedFriend].sort().join("_");
+    messageRef = doc(db, "messages", conversationId);
+    
+    
+    // Get the current message data
+    const messageSnapshot = await getDoc(messageRef);
+    
+    if (!messageSnapshot.exists()) {
+      console.error("Message not found");
+      return;
+    }
+    
+    const messageData = messageSnapshot.data();
+    const textsArray = messageData.texts || [];
+    
+    // Check if the reactionIndex is valid
+    if (reactionIndex < 0 || reactionIndex >= textsArray.length) {
+      console.error("Invalid reaction index");
+      return;
+    }
+    
+    // Make a copy of the texts array
+    const updatedTexts = [...textsArray];
+    
+    // Set the reaction as a string
+    updatedTexts[reactionIndex].reaction = emoji;
+    
+    // Update the message document in Firestore
+    await updateDoc(messageRef, {
+      texts: updatedTexts
+    });
+    
+    console.log(`Reaction ${emoji} added successfully`);
+  } catch (error) {
+    console.error("Error adding reaction:", error);
+  }
+};
+
   return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading, friendToTop, setFriendToTop
-    , isProcessing,selectedImage, setSelectedImage
+    , isProcessing,selectedImage, setSelectedImage, handleSendReaction, reactionIndex, setReactionIndex
    };
 };
 

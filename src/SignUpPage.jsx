@@ -112,16 +112,7 @@ const SignUpPage = () => {
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div className="input-group">
-          <label htmlFor="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            value={username}
-            onChange={handleUsernameChange}
-            placeholder="Enter your username (no spaces)"
-            required
-          />
-          {usernameError && <p className="input-error">{usernameError}</p>}
+          
 
           <label htmlFor="email">Email</label>
           <input
@@ -132,6 +123,17 @@ const SignUpPage = () => {
             placeholder="Enter your email"
             required
           />
+
+        <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={handleUsernameChange}
+            placeholder="Enter your username (no spaces)"
+            required
+          />
+          {usernameError && <p className="input-error">{usernameError}</p>}
 
           <label htmlFor="password">Password</label>
           <input
