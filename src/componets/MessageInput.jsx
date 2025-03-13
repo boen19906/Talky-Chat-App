@@ -14,9 +14,9 @@ const MessageInput = ({
   imagePreview,
   isLoading,
   modalOn,
-  setShowEmojiModal
+  setShowEmojiModal,
+  inputRef
 }) => {
-  const inputRef = useRef(null);
   // Add event listener for keydown events
   useEffect(() => {
     if (modalOn) return;

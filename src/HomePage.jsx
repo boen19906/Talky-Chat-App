@@ -56,7 +56,7 @@ const HomePage = () => {
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
   const { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleDeleteMessage, handleCancelImage, imageFile, fileInputRef, imagePreview, isLoading,
-    friendToTop, setFriendToTop, isProcessing, selectedImage, setSelectedImage,handleSendReaction, reactionIndex, setReactionIndex
+    friendToTop, setFriendToTop, isProcessing, selectedImage, setSelectedImage,handleSendReaction, reactionIndex, setReactionIndex, inputRef
    } = useMessages(
     selectedFriend,
     selectedGroup,
@@ -180,6 +180,7 @@ const HomePage = () => {
         setShowReactionsModal={setShowReactionsModal}
         setReactionIndex={setReactionIndex}
         setShowEmojiModal={setShowEmojiModal}
+        inputRef={inputRef}
       />
 
       {/* Logout Button */}
@@ -311,6 +312,7 @@ const HomePage = () => {
           setShowEmojiModal={setShowEmojiModal}
           message={message}
           setMessage={setMessage}
+          inputRef={inputRef}
         />
       )}
     </div>

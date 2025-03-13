@@ -1104,7 +1104,8 @@
   background-color: white;
   border-radius: 12px;
   padding: 20px;
-  width: 280px;
+  height:240px;
+  width: 240px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -1121,8 +1122,9 @@
   grid-template-columns: repeat(5, 1fr); /* 5 emojis per row */
   gap: 10px; /* Space between buttons */
   justify-content: center;
-  max-width: 300px; /* Adjust based on your needs */
+  max-width: 240px; /* Adjust based on your needs */
   margin: auto;
+  overflow-y:auto;
 }
 
 .emoji-button {
@@ -1148,6 +1150,7 @@
   background-color: #ff4d4d; /* Red color for emphasis */
   color: white;
   border: none;
+  margin-top:10px;
   padding: 10px 15px;
   border-radius: 5px;
   font-size: 0.75rem;

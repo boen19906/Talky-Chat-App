@@ -62,16 +62,23 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
             </div>
             
             {/* Reaction bubble with improved visibility */}
-            {msg.reaction && (
+            {(msg.reaction && msg.sender != "You") && (
               <div 
                 className="message-reaction" 
-                title={msg.sender}
                 onClick={() => {
                   setShowReactionsModal(true);
                   setModalOn(true);
                   setReactionIndex(index);
                 }}
                 
+              >
+                {msg.reaction}
+              </div>
+            )}
+
+            {(msg.reaction && msg.sender == "You") && (
+              <div 
+                className="message-reaction" 
               >
                 {msg.reaction}
               </div>

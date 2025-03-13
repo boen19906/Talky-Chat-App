@@ -29,7 +29,7 @@ const GamesModal = ({setShowGamesModal, setModalOn}) => {
             }
             className="comfirm-button game"
           >
-            Comfirm
+            Confirm
       </button>
       <button
             type="button"

@@ -28,7 +28,8 @@ const ChatArea = ({
     setModalOn,
     setShowReactionsModal,
     setReactionIndex,
-    setShowEmojiModal
+    setShowEmojiModal,
+    inputRef
 }) => {
     const chatMessagesRef = useRef(null);
 
@@ -134,6 +135,7 @@ const ChatArea = ({
                        isLoading={isLoading}
                        modalOn={modalOn}
                        setShowEmojiModal={setShowEmojiModal}
+                       inputRef={inputRef}
                     
                     />
                 </>
@@ -171,6 +173,7 @@ const ChatArea = ({
                         isLoading={isLoading}
                         modalOn={modalOn}
                         setShowEmojiModal={setShowEmojiModal}
+                        inputRef={inputRef}
                         
                     />
                 </>

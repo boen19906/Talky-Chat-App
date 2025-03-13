@@ -17,6 +17,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [reactionIndex, setReactionIndex] = useState(0);
+  const inputRef = useRef(null);
 
   const openai = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -155,7 +156,8 @@ useEffect(() => {
                   timestamp: timestamp,
                   viewed: selectedFriend ? msg.viewed : undefined, // Only track viewed status for direct messages
                   imageUrl: msg.imageUrl || null,
-                  reaction: msg.reaction || null
+                  reaction: msg.reaction || null,
+                  recipient: msg.recipient
                 };
               });
 
@@ -247,7 +249,7 @@ useEffect(() => {
                 sender: hoodGPTUserId,
                 text: completion.choices[0].message.content,
                 timestamp: new Date().toISOString(),
-                viewed: false
+                viewed: false,
               }),
               lastUpdated: serverTimestamp()
             });
@@ -550,7 +552,7 @@ const handleSendReaction = async (emoji) => {
 };
 
   return { message, setMessage, messages, handleSendMessage, handleImageChange, handleUploadImage, handleCancelImage, handleDeleteMessage, imageFile, fileInputRef, imagePreview, isLoading, friendToTop, setFriendToTop
-    , isProcessing,selectedImage, setSelectedImage, handleSendReaction, reactionIndex, setReactionIndex
+    , isProcessing,selectedImage, setSelectedImage, handleSendReaction, reactionIndex, setReactionIndex, inputRef
    };
 };
 

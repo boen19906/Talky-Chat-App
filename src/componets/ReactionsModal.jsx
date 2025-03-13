@@ -5,7 +5,14 @@ const ReactionsModal = ({ setShowReactionsModal, handleSendReaction}) => {
   const [selectedEmoji, setSelectedEmoji] = useState(null);
   
   // Array of emoji reactions to choose from
-  const emojis = ["👍", "❤️", "😂", "😮", "😢"];
+  const emojis = [
+    "😂", "❤️", "👍", "🤣", "😭", "😊", "🙏", "😍", "💕", "🥰",
+    "😘", "😎", "😢", "🤔", "🙄", "😮", "😡", "🎉", "🤗", "💪",
+    "🔥", "💖", "😜", "👏", "😆", "🌟", "💯", "😴", "🤩", "💔",
+    "😋", "🤯", "😇", "😷", "🤤", "💤", "👀", "🤑", "🙃", "😈",
+    "🥳", "🤓", "😌", "💗", "🤡", "💀", "🐶", "🐱", "🦄", "🍕",
+    "🚀", "🎶", "🏆", "📸", "🎮", "🎭", "🎨", "⚡", "🌍", "⏳"
+  ];
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -33,10 +40,17 @@ const ReactionsModal = ({ setShowReactionsModal, handleSendReaction}) => {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="reactions-modal" ref={modalRef}>
+    <div className="modal-overlay fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+      <div className="reactions-modal bg-white rounded-lg shadow-lg p-4 max-w-xs w-full" ref={modalRef}
+      style={{height:'320px'}}>
         <h3>Choose a reaction</h3>
-        <div className="emoji-container">
+        <div className="emoji-container grid grid-cols-5 gap-2 max-h-60 overflow-y-auto p-2"
+        style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            overflowY: 'auto',
+            maxHeight: '240px'
+          }}>
           {emojis.map((emoji, index) => (
             <button
               key={index}
