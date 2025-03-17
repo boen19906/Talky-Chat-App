@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const ReactionsModal = ({ setShowReactionsModal, handleSendReaction}) => {
+const ReactionsModal = ({ setShowReactionsModal, handleSendReaction, setModalOn}) => {
   const modalRef = useRef(null);
   const [selectedEmoji, setSelectedEmoji] = useState(null);
   
@@ -18,6 +18,7 @@ const ReactionsModal = ({ setShowReactionsModal, handleSendReaction}) => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setShowReactionsModal(false);
+        setModalOn(false);
       }
     };
 
@@ -31,12 +32,14 @@ const ReactionsModal = ({ setShowReactionsModal, handleSendReaction}) => {
     setSelectedEmoji(emoji);
     handleSendReaction(emoji);
     setShowReactionsModal(false);
+    setModalOn(false);
   };
 
   const handleRemoveReaction = () => {
     setSelectedEmoji(null);
     handleSendReaction(null);
     setShowReactionsModal(false);
+    setModalOn(false);
   };
 
   return (

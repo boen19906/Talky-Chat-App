@@ -229,35 +229,112 @@ const useFriends = (setShowFriendRequestModal) => {
   const handleAddFriendSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
     if (newFriend.trim()) {
-      console.log("hello");
+      console.log("Submitting friend request...");
       try {
         const user = auth.currentUser;
         if (!user) return;
   
-        // Special case for adding HoodGPT
+        // Get the user document for the requested friend
+        const usersRef = collection(db, "users");
+        
+        // Handle both username and special case for HoodGPT
+        let querySnapshot;
+        let friendId;
+        
         if (newFriend.trim().toLowerCase() === "hoodgpt") {
-          const hoodGPTUserId = "ID9HUGYXXYRmK2hQv5rtomM2ren2";
+          // Direct lookup for HoodGPT by ID
+          friendId = "ID9HUGYXXYRmK2hQv5rtomM2ren2";
+          const friendDocRef = doc(db, "users", friendId);
+          const friendDoc = await getDoc(friendDocRef);
           
-          // Check if already friends
-          if (friends.includes(hoodGPTUserId)) {
-            setError("You're already connected with HoodGPT");
+          // If HoodGPT doesn't exist in the database, handle the error
+          if (!friendDoc.exists()) {
+            setError("HoodGPT user not found.");
             return;
           }
+          
+          // Create artificial query snapshot structure to match the regular flow
+          querySnapshot = {
+            docs: [{ id: friendId, data: () => friendDoc.data() }],
+            empty: false
+          };
+        } else {
+          // Regular username search
+          const q = query(usersRef, where("username", "==", newFriend.trim()));
+          querySnapshot = await getDocs(q);
+          
+          // Check if user exists
+          if (querySnapshot.empty) {
+            setError("User not found. Please check the username and try again.");
+            return;
+          }
+          
+          friendId = querySnapshot.docs[0].id;
+        }
+
+        if (newFriend.trim().toLowerCase() === "aristotle") {
+          // Direct lookup for HoodGPT by ID
+          friendId = "PVYCL7sErxYv3Xd2Z0hqU5z8UOy2";
+          const friendDocRef = doc(db, "users", friendId);
+          const friendDoc = await getDoc(friendDocRef);
+          
+          // If HoodGPT doesn't exist in the database, handle the error
+          if (!friendDoc.exists()) {
+            setError("Aristotle user not found.");
+            return;
+          }
+          
+          // Create artificial query snapshot structure to match the regular flow
+          querySnapshot = {
+            docs: [{ id: friendId, data: () => friendDoc.data() }],
+            empty: false
+          };
+        } else {
+          // Regular username search
+          const q = query(usersRef, where("username", "==", newFriend.trim()));
+          querySnapshot = await getDocs(q);
+          
+          // Check if user exists
+          if (querySnapshot.empty) {
+            setError("User not found. Please check the username and try again.");
+            return;
+          }
+          
+          friendId = querySnapshot.docs[0].id;
+        }
   
-          // Add HoodGPT to user's friends
+        const friendData = querySnapshot.docs[0].data();
+        
+        // Check if already friends
+        if (friends.includes(friendId)) {
+          setError(`You're already connected with ${friendData.username || "this user"}.`);
+          return;
+        }
+  
+        // Get current user data
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        
+        // Unified bot handling (includes HoodGPT and any other bots)
+        if (friendData.isBot === true || 
+          newFriend.trim().toLowerCase() === "hoodgpt" ||
+        newFriend.trim().toLowerCase() == "aristotle") {
+          console.log("Adding bot user automatically");
+          
+          // Add bot to user's friends directly
           const userDocRef = doc(db, "users", user.uid);
           await updateDoc(userDocRef, {
-            friends: arrayUnion(hoodGPTUserId)
+            friends: arrayUnion(friendId)
           });
   
           // Create messages document
-          const convoId = [user.uid, hoodGPTUserId].sort().join('_');
+          const convoId = [user.uid, friendId].sort().join('_');
           const convoRef = doc(db, "messages", convoId);
           
           // Initialize conversation if it doesn't exist
           if (!(await getDoc(convoRef)).exists()) {
             await setDoc(convoRef, {
-              participants: [user.uid, hoodGPTUserId],
+              participants: [user.uid, friendId],
               texts: [],
               lastUpdated: serverTimestamp()
             });
@@ -268,34 +345,16 @@ const useFriends = (setShowFriendRequestModal) => {
           return;
         }
   
-        // Original logic for normal friends
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("username", "==", newFriend.trim()));
-        const querySnapshot = await getDocs(q);
-
-        // CORRECTED: Use .empty property instead of .empty()
-        if (querySnapshot.empty) {
-          setError("User not found. Please check the username and try again.");
-          return;
-        }
-  
-        const friendDoc = querySnapshot.docs[0];
-        const friendId = friendDoc.id;
-        const friendDocRef = doc(db, "users", friendId);
-  
-        if (friends.includes(friendId)) {
-          setError("You are already friends with this user.");
-          return;
-        }
-  
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.data();
+        // Handle normal user flow (not a bot)
         
+        // Check if friend request already sent
         if (userData.sentFriendRequests?.includes(friendId)) {
           setError("Friend request already sent.");
           return;
         }
   
+        // Send friend request
+        const friendDocRef = doc(db, "users", friendId);
         await updateDoc(friendDocRef, {
           friendRequests: arrayUnion(user.uid)
         });

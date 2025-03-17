@@ -1,15 +1,17 @@
 import {React, useEffect} from "react";
+import { useNavigate } from "react-router-dom";
 
 const GamesModal = ({setShowGamesModal, setModalOn}) => {
+  const navigate = useNavigate();
     return (
 <div className="modal-overlay">
     <div className="modal game">
-      <h3>Choose a Game</h3>
+      <h3>Talky Games</h3>
       <p>Select a game below!</p>
       
       <div className="games-grid">
         <div className="game-box">
-          <div className="game-icon">🎲</div>
+          <div className="game-icon" onClick={() => {navigate('/coup')}}>🎲</div>
           <h4>Coup</h4>
           <p>Bluffing, deception, and strategy.</p>
         </div>
@@ -19,29 +21,6 @@ const GamesModal = ({setShowGamesModal, setModalOn}) => {
           <h4>Chess</h4>
           <p>Classic strategy game</p>
         </div>
-      </div>
-      <div className="button-container">
-
-      <button
-            type="button"
-            onClick={() => 
-              {setShowGamesModal(false); setModalOn(false);}
-            }
-            className="comfirm-button game"
-          >
-            Confirm
-      </button>
-      <button
-            type="button"
-            onClick={() => 
-              {setShowGamesModal(false); setModalOn(false);}
-            }
-            className="cancel-button game"
-          >
-            Cancel
-      </button>
-      
-
       </div>
       
       

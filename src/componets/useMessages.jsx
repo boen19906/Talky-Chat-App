@@ -181,28 +181,53 @@ useEffect(() => {
 
 
 
-  useEffect(() => {
-    
-    let unsubscribe = () => {};
-    let hoodGPTUserId = null;
-    let timeoutId = null;
-    const processedMessages = new Set();
-    
+  // Enhanced bot message handling system
+useEffect(() => {
+  let unsubscribes = [];
+  let botUserIds = {};
+  let timeoutIds = {};
+  const processedMessages = new Set();
   
-    const initializeHoodGPT = async () => {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', 'HoodGPT'));
-      const querySnapshot = await getDocs(q);
-      hoodGPTUserId = querySnapshot.docs[0]?.id;
+  // Initialize all bots
+  const initializeBots = async () => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('isBot', '==', true));
+    const querySnapshot = await getDocs(q);
+    
+    querySnapshot.docs.forEach(doc => {
+      const botData = doc.data();
+      botUserIds[botData.username] = doc.id;
+    });
+    
+    console.log("Initialized bots:", Object.keys(botUserIds));
+  };
+
+  const handleBotMessages = (user) => {
+    if (!selectedFriend) return;
+    
+    // Get the bot data for the selected friend
+    const botId = selectedFriend;
+    let botInfo = null;
+    
+    // Check if the selected friend is a bot
+    const checkIfSelectedFriendIsBot = async () => {
+      try {
+        const friendDoc = await getDoc(doc(db, 'users', selectedFriend));
+        if (friendDoc.exists() && friendDoc.data().isBot === true) {
+          botInfo = friendDoc.data();
+          setupBotListener(botInfo, botId);
+        }
+      } catch (error) {
+        console.error("Error checking if friend is bot:", error);
+      }
     };
-  
-    const handleHoodGPTMessages = (user) => {
-      if (!selectedFriend || selectedFriend !== hoodGPTUserId) return;
-  
-      const conversationId = [user.uid, hoodGPTUserId].sort().join('_');
+    
+    // Set up a listener for this specific bot
+    const setupBotListener = (botInfo, botId) => {
+      const conversationId = [user.uid, botId].sort().join('_');
       const convoRef = doc(db, 'messages', conversationId);
-  
-      unsubscribe = onSnapshot(convoRef, async (docSnap) => {
+      
+      const unsubscribe = onSnapshot(convoRef, async (docSnap) => {
         if (!docSnap.exists() || isProcessing) return;
   
         // Get current messages and check last sender
@@ -212,8 +237,8 @@ useEffect(() => {
         // Only respond if last message is from user
         if (!lastMessage || lastMessage.sender !== user.uid) return;
   
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(async () => {
+        clearTimeout(timeoutIds[botId]);
+        timeoutIds[botId] = setTimeout(async () => {
           try {
             setIsProcessing(true);
             const unprocessed = texts.filter(msg => 
@@ -230,23 +255,38 @@ useEffect(() => {
             const combinedContent = unprocessed
               .map(msg => msg.text)
               .join(" [NEXT MESSAGE] ");
+            
+            let promptContent = '';
+            let model = 'deepseek-chat';
+            
+            // Determine which bot is selected and set appropriate prompt
+            if (botInfo.username === 'HoodGPT') {
+              promptContent = `ROLEPLAY AS a inner city gangster named HoodGPT. You are violent, angry, and curse a lot. Don't cesnor your curse words with "*".
+                Don't keep repeating the same things, mix things up for example don't keep saying "yo..." and mix up things at the end too. This your boss and fellow gangster ${userUsername}  
+                This is the context:\n${combinedContent} \nnow respond in under 30 words as HoodGPT, Do not, again DO NOT start your response with  "Yo ${userUsername}":`;
+            } else if (botInfo.username === 'Aristotle') {
+              promptContent = `ROLEPLAY AS the ancient Greek philosopher Aristotle. You are wise, thoughtful, and speak in a formal manner with philosophical insights.
+                Also you are good tutor and your philosphy is: emphasized the importance of reason, observation, and logic in understanding the world, arguing that happiness (eudaimonia) is achieved through virtuous living and intellectual activity, and that everything has a purpose or "telos"
+                This is the context:\n${combinedContent} \nnow respond in under 50 words as Aristotle, relating to the user's query with philosophical wisdom, also don't keep repeating yourself in the :`;
+            } else {
+              // Default prompt for other bots
+              promptContent = `ROLEPLAY AS ${botInfo.username}. This is the context:\n${combinedContent} \nnow respond in under 40 words:`;
+            }
   
             // Generate response
             const completion = await openai.chat.completions.create({
               messages: [{
                 role: 'user',
-                content: `ROLEPLAY AS a inner city gangster named HoodGPT. You are violent, angry, and curse a lot. Don't cesnor your curse words with "*".
-                 Don't keep repeating the same things, mix things up for example don't keep saying "yo..." and mix up things at the end too. This your boss and fellow gangster ${userUsername}  
-                 This is the context:\n${combinedContent} \nnow respond in under 30 words as HoodGPT, Do not, again DO NOT start your response with  "Yo ${userUsername}":`
+                content: promptContent
               }],
-              model: 'deepseek-chat',
+              model: model,
               max_tokens: 150
             });
   
             // Add bot response
             await updateDoc(convoRef, {
               texts: arrayUnion({
-                sender: hoodGPTUserId,
+                sender: botId,
                 text: completion.choices[0].message.content,
                 timestamp: new Date().toISOString(),
                 viewed: false,
@@ -256,27 +296,34 @@ useEffect(() => {
   
             processedMessages.clear();
           } catch (error) {
-            console.error('HoodGPT error:', error);
+            console.error(`${botInfo.username} error:`, error);
             unprocessed.forEach(msg => processedMessages.delete(msg.timestamp));
           } finally {
             setIsProcessing(false);
           }
         }, 2000); // 2-second debounce
       });
+      
+      unsubscribes.push(unsubscribe);
     };
-  
-    const user = auth.currentUser;
-    if (user) {
-      initializeHoodGPT().then(() => handleHoodGPTMessages(user));
-    }
-  
-    return () => {
-      clearTimeout(timeoutId);
-      unsubscribe();
-      setIsProcessing(false);
-      processedMessages.clear();
-    };
-  }, [selectedFriend]);
+    
+    // Check if the selected friend is a bot
+    checkIfSelectedFriendIsBot();
+  };
+
+  const user = auth.currentUser;
+  if (user) {
+    initializeBots().then(() => handleBotMessages(user));
+  }
+
+  return () => {
+    // Clear all timeouts and unsubscribe from all listeners
+    Object.keys(timeoutIds).forEach(botId => clearTimeout(timeoutIds[botId]));
+    unsubscribes.forEach(unsubscribe => unsubscribe());
+    setIsProcessing(false);
+    processedMessages.clear();
+  };
+}, [selectedFriend, userUsername]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

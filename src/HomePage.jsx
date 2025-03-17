@@ -304,6 +304,7 @@ const HomePage = () => {
         <ReactionsModal
           setShowReactionsModal={setShowReactionsModal}
           handleSendReaction={handleSendReaction}
+          setModalOn={setModalOn}
         />
       )}
 

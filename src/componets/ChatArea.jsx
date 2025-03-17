@@ -184,15 +184,26 @@ const ChatArea = ({
             )}
 
 {isProcessing && (
-      <div className="typing-indicator">
-        <div className="loading-dots">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
-        <span className="typing-text">HoodGPT Typing...</span>
-      </div>
-    )}
+  <div
+    className="typing-indicator"
+    style={{
+      backgroundColor:
+        friendUsernames[selectedFriend] === "HoodGPT"
+          ? "#CC99FF" // Purple
+          : friendUsernames[selectedFriend] === "Aristotle"
+          ? "#FF9999" // Light red
+          : "transparent", // Default color
+    }}
+  >
+    <div className="loading-dots">
+      <div className="dot"></div>
+      <div className="dot"></div>
+      <div className="dot"></div>
+    </div>
+    <span className="typing-text">{friendUsernames[selectedFriend]} Typing...</span>
+  </div>
+)}
+
         </div>
     );
 };

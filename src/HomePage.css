@@ -1051,7 +1051,7 @@
 /*hoodgpt loading*/
 .typing-indicator {
   position: absolute;
-  bottom: 80px;
+  bottom: 90px;
   left: 20px;
   display: flex;
   align-items: center;
