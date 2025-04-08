@@ -105,9 +105,7 @@ useEffect(() => {
   useEffect(() => {
     let unsubscribe = () => {};
     
-    
     const fetchMessages = async () => {
-      
       const user = auth.currentUser;
       if (!user) return;
       
@@ -129,7 +127,6 @@ useEffect(() => {
           return;
         }
 
-        
         // Set up a real-time listener for the conversation document
         unsubscribe = onSnapshot(conversationRef, async (docSnap) => {
           // Only process if this is still the current conversation
@@ -151,11 +148,13 @@ useEffect(() => {
                 }
 
                 return {
-                  text: msg.text,
+                  text: msg.text || "",
                   sender: msg.sender === user.uid ? "You" : friendUsernames[msg.sender] || "Unknown",
                   timestamp: timestamp,
-                  viewed: selectedFriend ? msg.viewed : undefined, // Only track viewed status for direct messages
-                  imageUrl: msg.imageUrl || null,
+                  viewed: selectedFriend ? msg.viewed : undefined,
+                  fileUrl: msg.fileUrl || null,
+                  fileName: msg.fileName || null,
+                  fileType: msg.fileType || null,
                   reaction: msg.reaction || null,
                   recipient: msg.recipient
                 };
@@ -326,9 +325,11 @@ useEffect(() => {
 }, [selectedFriend, userUsername]);
 
   const handleSendMessage = async (e) => {
+   
     e.preventDefault();
     if (message.trim()) {
       try {
+        
         const user = auth.currentUser;
         if (user) {
           let conversationRef;
@@ -450,7 +451,9 @@ const handleImageChange = (e) => {
     const file = e.target.files[0];
     console.log("File selected:", file);
     setImageFile(file);
-    setImagePreview(URL.createObjectURL(file)); // Create object URL for preview
+    if (file.type.startsWith('image/')) {
+      setImagePreview(URL.createObjectURL(file)); // Create object URL for preview
+    }
   }
 };
 
@@ -468,23 +471,24 @@ const handleImageChange = (e) => {
       const user = auth.currentUser;
       if (!user) return;
   
-      // 1. Upload image to Firebase Storage
-      const imageName = uuidv4() + "_" + imageFile.name;
-      const imageRef = ref(storage, `chatImages/${imageName}`);
-      const snapshot = await uploadBytes(imageRef, imageFile);
+      // 1. Upload file to Firebase Storage
+      const fileName = uuidv4() + "_" + imageFile.name;
+      const fileRef = ref(storage, `chatFiles/${fileName}`);
+      const snapshot = await uploadBytes(fileRef, imageFile);
       const downloadURL = await getDownloadURL(snapshot.ref);
   
-      // 2. Pre-load the image before sending the message
-      const preloadImage = () => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.src = downloadURL;
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-      };
-  
-      await preloadImage();
+      // 2. Pre-load the file if it's an image
+      if (imageFile.type.startsWith('image/')) {
+        const preloadImage = () => {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = downloadURL;
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+        };
+        await preloadImage();
+      }
   
       // 3. Determine conversation type and ID
       const isGroup = !!selectedGroup;
@@ -497,7 +501,9 @@ const handleImageChange = (e) => {
         sender: user.uid,
         ...(isGroup ? { groupId: selectedGroup } : { recipient: selectedFriend }),
         text: "",
-        imageUrl: downloadURL,
+        fileUrl: downloadURL,
+        fileName: imageFile.name,
+        fileType: imageFile.type,
         timestamp: new Date().toISOString(),
         viewed: false,
         reaction: ""
@@ -530,11 +536,15 @@ const handleImageChange = (e) => {
 
       setIsLoading(false);
       setImageFile(null);
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+        setImagePreview(null);
+      }
     } catch (error) {
-      console.error("Error uploading image:", error);
-      setIsLoading(false); // Add this
+      console.error("Error uploading file:", error);
+      setIsLoading(false);
     } finally {
-      setIsLoading(false); // Optional safety net
+      setIsLoading(false);
     }
   };
 

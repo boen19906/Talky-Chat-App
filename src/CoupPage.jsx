@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import useFriends from "./componets/useFriends";
+import PlayersGameModal from "./componets/PlayersGameModal";
  
 // Define Roles as constants
 const Role = {
@@ -77,18 +79,22 @@ class Player {
   }
 }
  
-function CoupGame() {
+const CoupGame = () => {
+  const [gameStart, setGameStart] = useState(false);
   const [deck] = useState(new Deck());
   const [players, setPlayers] = useState([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [gameLog, setGameLog] = useState("");
+
+  const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
+    newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
+  activeTab, setActiveTab } = useFriends();
  
   useEffect(() => {
     initPlayers();
   }, []);
   
- 
-  function initPlayers() {
+  const initPlayers = () => {
     let numPlayers = 0;
   
     // Ensure valid number of players
@@ -106,29 +112,28 @@ function CoupGame() {
       }
   
       const player = new Player(name);
-      player.addCard(deck.draw()); // Assuming Player class has addCard method
+      player.addCard(deck.draw());
       player.addCard(deck.draw());
       newPlayers.push(player);
     }
   
     setPlayers(newPlayers);
     logMessage(`Game started! It's ${newPlayers[0].name}'s turn.`);
-  }
+  };
   
- 
-  function logMessage(message) {
+  const logMessage = (message) => {
     setGameLog((prev) => prev + message + "\n");
-  }
+  };
  
-  function getCurrentPlayer() {
+  const getCurrentPlayer = () => {
     return players[currentPlayerIndex];
-  }
+  };
  
-  function activePlayers() {
+  const activePlayers = () => {
     return players.filter((p) => p.alive);
-  }
+  };
  
-  function nextTurn() {
+  const nextTurn = () => {
     if (activePlayers().length <= 1) {
       logMessage(`Game Over! Winner: ${activePlayers()[0].name}`);
       return;
@@ -139,16 +144,16 @@ function CoupGame() {
     } while (!players[nextIndex].alive);
     setCurrentPlayerIndex(nextIndex);
     logMessage(`It's now ${players[nextIndex].name}'s turn.`);
-  }
+  };
  
   // Game action functions
  
-  function income(player) {
+  const income = (player) => {
     player.coins += 1;
     logMessage(`${player.name} takes Income and now has ${player.coins} coins.`);
-  }
+  };
  
-  function foreignAid(player) {
+  const foreignAid = (player) => {
     logMessage(`${player.name} attempts Foreign Aid (2 coins).`);
     const blocked = anyBlock(player, Role.DUKE, "Foreign Aid");
     if (blocked) {
@@ -159,9 +164,9 @@ function CoupGame() {
     logMessage(
       `Foreign Aid successful. ${player.name} now has ${player.coins} coins.`
     );
-  }
+  };
  
-  function coup(player) {
+  const coup = (player) => {
     if (player.coins < 7) {
       logMessage("Not enough coins for Coup.");
       return;
@@ -171,9 +176,9 @@ function CoupGame() {
     player.coins -= 7;
     logMessage(`${player.name} coups ${target.name}!`);
     target.loseCard();
-  }
+  };
  
-  function tax(player) {
+  const tax = (player) => {
     logMessage(`${player.name} claims DUKE for Tax (3 coins).`);
     if (performChallenge(player, Role.DUKE)) {
       logMessage("Tax canceled due to successful challenge.");
@@ -181,9 +186,9 @@ function CoupGame() {
     }
     player.coins += 3;
     logMessage(`${player.name} now has ${player.coins} coins.`);
-  }
+  };
  
-  function assassinate(player) {
+  const assassinate = (player) => {
     if (player.coins < 3) {
       logMessage("Not enough coins to Assassinate.");
       return;
@@ -215,9 +220,9 @@ function CoupGame() {
       logMessage(`Assassination goes through. ${target.name} loses a card.`);
       target.loseCard();
     }
-  }
+  };
  
-  function exchange(player) {
+  const exchange = (player) => {
     logMessage(`${player.name} claims AMBASSADOR to Exchange cards.`);
     if (performChallenge(player, Role.AMBASSADOR)) {
       logMessage("Exchange canceled due to successful challenge.");
@@ -250,9 +255,9 @@ function CoupGame() {
     }
     player.cards = newHand;
     logMessage(`${player.name} finishes Exchange.`);
-  }
+  };
  
-  function steal(player) {
+  const steal = (player) => {
     const target = chooseTarget(player);
     if (!target) return;
     logMessage(`${player.name} claims CAPTAIN to steal from ${target.name}.`);
@@ -282,11 +287,11 @@ function CoupGame() {
     target.coins -= stolen;
     player.coins += stolen;
     logMessage(`${player.name} steals ${stolen} coins from ${target.name}.`);
-  }
+  };
  
   // Helper functions for target selection and challenges
  
-  function chooseTarget(actingPlayer) {
+  const chooseTarget = (actingPlayer) => {
     const available = players.filter((p) => p !== actingPlayer && p.alive);
     if (available.length === 0) {
       logMessage("No available targets.");
@@ -304,9 +309,9 @@ function CoupGame() {
       return available[index];
     }
     return null;
-  }
+  };
  
-  function performChallenge(actingPlayer, claimedRole) {
+  const performChallenge = (actingPlayer, claimedRole) => {
     for (let challenger of players) {
       if (challenger === actingPlayer || !challenger.alive) continue;
       const challenge = window.confirm(
@@ -336,9 +341,9 @@ function CoupGame() {
       }
     }
     return false;
-  }
+  };
  
-  function performBlockChallenge(blocker, claimedRole) {
+  const performBlockChallenge = (blocker, claimedRole) => {
     for (let challenger of players) {
       if (challenger === blocker || !challenger.alive) continue;
       const challenge = window.confirm(
@@ -367,9 +372,9 @@ function CoupGame() {
       }
     }
     return false;
-  }
+  };
  
-  function anyBlock(actingPlayer, blockingRole, actionDescription) {
+  const anyBlock = (actingPlayer, blockingRole, actionDescription) => {
     for (let p of players) {
       if (p === actingPlayer || !p.alive) continue;
       const block = window.confirm(
@@ -389,7 +394,7 @@ function CoupGame() {
       }
     }
     return false;
-  }
+  };
  
   return (
     <div style={{ padding: "20px" }}>
@@ -484,6 +489,6 @@ function CoupGame() {
       </div>
     </div>
   );
-}
+};
  
 export default CoupGame;

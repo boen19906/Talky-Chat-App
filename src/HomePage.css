@@ -1195,4 +1195,53 @@
   transform: scale(1.2);
 }
 
+.file-preview-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  max-width: 300px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color 0.2s ease;
+  max-width: 300px;
+}
+
+.file-link:hover {
+  background-color: #e0e0e0;
+}
+
+.file-link span {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
   

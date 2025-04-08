@@ -1,8 +1,30 @@
 import React from "react";
+import { FaFile, FaDownload } from "react-icons/fa";
 
 const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageIndex, isGroup, setSelectedImage, setShowImageModal, setModalOn,
   setShowReactionsModal, setReactionIndex
 }) => {
+  // Function to determine if file is an image
+  const isImageFile = (fileType) => {
+    return fileType && (
+      fileType.startsWith('image/jpeg') || 
+      fileType.startsWith('image/png') || 
+      fileType.startsWith('image/gif') ||
+      fileType.startsWith('image/webp')
+    );
+  };
+
+  // Function to handle file download
+  const handleDownload = (url, fileName) => {
+    if (!url) return;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       {messages.map((msg, index) => {
@@ -34,26 +56,64 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
             className={`message ${isUser ? "user-message" : "recipient-message"}`}
             style={!isUser ? { 
               backgroundColor,
-              position: "relative" // Add position relative
+              position: "relative"
             } : { 
-              position: "relative" // Add position relative for user messages too
+              position: "relative"
             }}
           >
             <div className="message-content">
               <strong style={{ color: !isUser ? textColor : undefined }}>
                 {isUser ? "You: " : `${msg.sender}: `}
               </strong>
-              {msg.imageUrl ? (
-                <img
-                  src={msg.imageUrl}
-                  alt="Uploaded"
-                  style={{ 
-                    maxWidth: "200px", 
-                    margin: "8px 0", 
-                    cursor: "pointer" 
-                  }}
-                  onClick={() => {setSelectedImage(msg.imageUrl); setShowImageModal(true);}}
-                />
+              
+              {/* Handle file attachments */}
+              {msg.fileUrl ? (
+                isImageFile(msg.fileType) ? (
+                  <img
+                    src={msg.fileUrl}
+                    alt="Uploaded"
+                    style={{ 
+                      maxWidth: "200px", 
+                      margin: "8px 0", 
+                      cursor: "pointer" 
+                    }}
+                    onClick={() => {setSelectedImage(msg.fileUrl); setShowImageModal(true);}}
+                  />
+                ) : (
+                  <div className="file-preview" style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "10px",
+                    background: "rgba(0,0,0,0.05)",
+                    borderRadius: "6px",
+                    margin: "5px 0"
+                  }}>
+                    <FaFile size={24} style={{ marginRight: "10px" }} />
+                    <span className="file-name" style={{ 
+                      flexGrow: 1,
+                      color: !isUser ? textColor : undefined,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {msg.fileName || "File"}
+                    </span>
+                    <button 
+                      onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "5px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      <FaDownload size={16} />
+                    </button>
+                  </div>
+                )
               ) : (
                 <span style={{ color: !isUser ? textColor : undefined }}>
                   {msg.text}
@@ -70,16 +130,13 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
                   setModalOn(true);
                   setReactionIndex(index);
                 }}
-                
               >
                 {msg.reaction}
               </div>
             )}
 
             {(msg.reaction && msg.sender == "You") && (
-              <div 
-                className="message-reaction" 
-              >
+              <div className="message-reaction">
                 {msg.reaction}
               </div>
             )}

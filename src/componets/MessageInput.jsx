@@ -1,6 +1,7 @@
 import { React, useState, useRef, useEffect } from "react";
 import { IoImagesSharp } from "react-icons/io5";
 import { CiFaceSmile } from "react-icons/ci";
+import { FaFile } from "react-icons/fa";
 
 const MessageInput = ({
   message,
@@ -40,7 +41,6 @@ const MessageInput = ({
         <input
           type="file"
           id="file-upload"
-          accept="image/*"
           ref={fileInputRef}
           onChange={handleImageChange}
           className="hidden-file-input"
@@ -56,23 +56,29 @@ const MessageInput = ({
             }}>
         <CiFaceSmile size={24}/>
         </label>
-        
       </div>
 
       {imageFile ? (
-        <div className="image-preview-container">
-          <div className="preview-frame">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="constrained-preview"
-            />
-          </div>
+        <div className="file-preview-container">
+          {imageFile.type.startsWith('image/') ? (
+            <div className="preview-frame">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="constrained-preview"
+              />
+            </div>
+          ) : (
+            <div className="file-preview">
+              <FaFile size={24} />
+              <span className="file-name">{imageFile.name}</span>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="loading-spinner"></div>
           ) : (
-            <div className="image-action-buttons">
+            <div className="file-action-buttons">
               <button
                 type="button"
                 onClick={handleCancelImage}
