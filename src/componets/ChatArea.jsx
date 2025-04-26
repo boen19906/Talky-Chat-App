@@ -29,7 +29,12 @@ const ChatArea = ({
     setShowReactionsModal,
     setReactionIndex,
     setShowEmojiModal,
-    inputRef
+    inputRef,
+    userUsername,
+    profileImage,
+    createdAt,
+    userEmail,
+    page
 }) => {
     const chatMessagesRef = useRef(null);
 
@@ -90,7 +95,9 @@ const ChatArea = ({
     }, [messages]);
 
     return (
-        <div className="chat-area">
+       <>
+       {page === "chat" && (
+            <div className="chat-area">
             {selectedGroup ? (
                 <>
                     <div className="chat-header">
@@ -123,19 +130,19 @@ const ChatArea = ({
                         />
                     </div>
                     <MessageInput
-                       message={message}
-                       setMessage={setMessage}
-                       handleSendMessage={handleSendMessage}
-                       handleImageChange={handleImageChange}
-                       handleUploadImage={handleUploadImage}
-                       handleCancelImage={handleCancelImage}
-                       imageFile={imageFile}
-                       fileInputRef={fileInputRef}
-                       imagePreview={imagePreview}
-                       isLoading={isLoading}
-                       modalOn={modalOn}
-                       setShowEmojiModal={setShowEmojiModal}
-                       inputRef={inputRef}
+                    message={message}
+                    setMessage={setMessage}
+                    handleSendMessage={handleSendMessage}
+                    handleImageChange={handleImageChange}
+                    handleUploadImage={handleUploadImage}
+                    handleCancelImage={handleCancelImage}
+                    imageFile={imageFile}
+                    fileInputRef={fileInputRef}
+                    imagePreview={imagePreview}
+                    isLoading={isLoading}
+                    modalOn={modalOn}
+                    setShowEmojiModal={setShowEmojiModal}
+                    inputRef={inputRef}
                     
                     />
                 </>
@@ -184,27 +191,67 @@ const ChatArea = ({
             )}
 
 {isProcessing && (
-  <div
+<div
     className="typing-indicator"
     style={{
-      backgroundColor:
+    backgroundColor:
         friendUsernames[selectedFriend] === "HoodGPT"
-          ? "#CC99FF" // Purple
-          : friendUsernames[selectedFriend] === "Aristotle"
-          ? "#FF9999" // Light red
-          : "transparent", // Default color
+        ? "#CC99FF" // Purple
+        : friendUsernames[selectedFriend] === "Aristotle"
+        ? "#FF9999" // Light red
+        : "transparent", // Default color
     }}
-  >
+>
     <div className="loading-dots">
-      <div className="dot"></div>
-      <div className="dot"></div>
-      <div className="dot"></div>
+    <div className="dot"></div>
+    <div className="dot"></div>
+    <div className="dot"></div>
     </div>
     <span className="typing-text">{friendUsernames[selectedFriend]} Typing...</span>
-  </div>
+</div>
 )}
 
         </div>
+       )}
+
+    {page === "profile" && (
+    <div className="profile-area">
+        <h3>Profile</h3>
+        {profileImage ? (
+        <img 
+            src={profileImage} 
+            alt="Profile" 
+            className="profile-image"
+        />
+        ) : (
+        <div className="profile-placeholder">
+            {userUsername ? userUsername.charAt(0).toUpperCase() : "U"}
+        </div>
+        )}
+        <h3 className="profile-username">{userUsername}</h3>
+        <div className="profile-content">
+        <div className="user-detail">
+            <span className="detail-label">Email</span>
+            <span className="detail-value">{userEmail}</span>
+        </div>
+        <div className="user-detail">
+            <span className="detail-label">Member since</span>
+            <span className="detail-value">
+                <span className="account-age">
+                    {new Date(createdAt).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}
+                </span>
+            </span>
+        </div>
+        </div>
+    </div>
+    )}
+        
+       </>
+        
     );
 };
 

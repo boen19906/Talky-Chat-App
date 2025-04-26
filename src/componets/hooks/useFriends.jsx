@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { auth, db } from "../../firebase";
 
 
 const useFriends = (setShowFriendRequestModal) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, getDocs, updateDoc, setDoc, arrayUnion, serverTimestamp, onSnapshot, collection, query, where } from "firebase/firestore";
-import { auth, db, storage } from "../firebase";
+import { auth, db, storage } from "../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
 import OpenAI from 'openai';

@@ -1,16 +1,23 @@
-import {React, useState, useEffect, useRef} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaUserFriends } from "react-icons/fa";
 import { IoGameController } from "react-icons/io5";
 import { MdOutlineGroups2 } from "react-icons/md";
+import { getStorage, getDownloadURL, ref } from "firebase/storage";
+import useUsername from "./hooks/useUsername";
+import { useNavigate } from "react-router-dom";
 
 const HamburgerMenu = ({handleAddFriend, setShowAddGroupModal, setShowGamesModal, setModalOn}) => {
     const [isOpen, setIsOpen] = useState(false); // State to manage menu visibility
     const menuRef = useRef(null);
+    const {userUsername, profileImage} = useUsername();
+    const navigate = useNavigate()
 
     // Toggle the menu open/close
     const toggleMenu = () => {
       setIsOpen(!isOpen);
     };
+
+    
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -27,6 +34,13 @@ const HamburgerMenu = ({handleAddFriend, setShowAddGroupModal, setShowGamesModal
         };
       }, [isOpen]);
   
+    // Handle profile click - closes menu and triggers profile action
+    const onProfileClick = () => {
+      setIsOpen(false);
+      navigate("/profile");
+
+    };
+
     return (
       <div className="hamburger-menu-container" ref={menuRef}>
         {/* Hamburger Icon */}
@@ -38,6 +52,27 @@ const HamburgerMenu = ({handleAddFriend, setShowAddGroupModal, setShowGamesModal
   
         {/* Menu Content */}
         <div className={`menu ${isOpen ? "open" : ""}`}>
+          {/* Enhanced Profile Section */}
+          <div 
+            className="profile-section" 
+            onClick={onProfileClick}
+          >
+            <div className="profile-container-hamburger">
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="profile-image-hamburger"
+                />
+              ) : (
+                <div className="profile-placeholder-hamburger">
+                  {userUsername ? userUsername.charAt(0).toUpperCase() : "U"}
+                </div>
+              )}
+              <h3 className="profile-username-hamburger">{userUsername}</h3>
+            </div>
+          </div>
+
           <ul>
             <li onClick={() => {setShowGamesModal(true); setIsOpen(false); setModalOn(true);}}>
                 <IoGameController className="menu-icon" />

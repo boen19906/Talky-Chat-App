@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { auth, db } from "../../firebase";
 
 const useUnreadMessages = (friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef) => {
   const [unreadMessages, setUnreadMessages] = useState({});

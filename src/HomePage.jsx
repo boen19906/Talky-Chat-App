@@ -2,32 +2,35 @@ import React, { useState, useEffect, useRef } from "react";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import HamburgerMenu from "./componets/HamburgerMenu";
 import FriendsList from "./componets/FriendsList";
 import ChatArea from "./componets/ChatArea";
-import useAuth from "./componets/useAuth";
-import useMessages from "./componets/useMessages";
-import useFriends from "./componets/useFriends";
-import useUnreadMessages from "./componets/useUnreadMessages";
-import useUsername from "./componets/useUsername";
-import AddFriendModal from "./componets/AddFriendModal";
-import RemoveFriendModal from "./componets/RemoveFriendModal";
-import RemoveGroupModal from "./componets/RemoveGroupModal";
-import LogoutModal from "./componets/LogOutModal";
-import FriendRequestModal from "./componets/FriendRequestModal";
-import RequestSentModal from "./componets/RequestSentModal";
-import DeleteMessageModal from "./componets/DeleteMessageModal";
-import AddGroupModal from "./componets/AddGroupModal";
-import AddGroupMembersModal from "./componets/AddGroupMembersModal";
-import ImageModal from "./componets/ImageModal";
-import GamesModal from "./componets/GamesModal";
-import ReactionsModal from "./componets/ReactionsModal";
-import EmojiModal from "./componets/EmojiModal";
+import useAuth from "./componets/hooks/useAuth";
+import useMessages from "./componets/hooks/useMessages";
+import useFriends from "./componets/hooks/useFriends";
+import useUnreadMessages from "./componets/hooks/useUnreadMessages";
+import useUsername from "./componets/hooks/useUsername";
 
-const HomePage = () => {
+
+import AddFriendModal from "./componets/modals/AddFriendModal";
+import RemoveFriendModal from "./componets/modals/RemoveFriendModal";
+import RemoveGroupModal from "./componets/modals/RemoveGroupModal";
+import LogoutModal from "./componets/modals/LogOutModal";
+import FriendRequestModal from "./componets/modals/FriendRequestModal";
+import RequestSentModal from "./componets/modals/RequestSentModal";
+import DeleteMessageModal from "./componets/modals/DeleteMessageModal";
+import AddGroupModal from "./componets/modals/AddGroupModal";
+import AddGroupMembersModal from "./componets/modals/AddGroupMembersModal";
+import ImageModal from "./componets/modals/ImageModal";
+import GamesModal from "./componets/modals/GamesModal";
+import ReactionsModal from "./componets/modals/ReactionsModal";
+import EmojiModal from "./componets/modals/EmojiModal";
+
+const HomePage = ({page}) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const audioRef = useRef(null);
   const [showlogoutModal, setShowlogoutModal] = useState(false);
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
@@ -51,7 +54,7 @@ const HomePage = () => {
 
   // Custom hooks
   const { user } = useAuth();
-  const { userUsername } = useUsername();
+  const { userUsername, profileImage, createdAt, userEmail} = useUsername();
   const { selectedGroup, setSelectedGroup, selectedGroupMembers, setSelectedGroupMembers, groupNames, setGroupNames, groups, setGroups, createGroup, selectedFriend, setSelectedFriend, friends, friendToRemove, setFriendToRemove, 
           newFriend, setNewFriend, groupToRemove, setGroupToRemove, friendRequested, setFriendRequested, friendRequestedUsername, friendUsernames, handleAddFriendSubmit, handleRemoveFriend, handleRemoveFromGroup, handleFriendRequest,
         activeTab, setActiveTab } = useFriends(setShowFriendRequestModal);
@@ -70,6 +73,7 @@ const HomePage = () => {
     groupUnreadMessages,
     setGroupUnreadMessages
   } = useUnreadMessages(friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef);
+  
 
 
   useEffect(() => {
@@ -85,7 +89,7 @@ const HomePage = () => {
   const handlelogout = async () => {
     try {
       await signOut(auth);
-      navigate("/signup");
+      navigate("/signin");
     } catch (error) {
       console.error("Error logging out:", error);
     }
@@ -100,27 +104,30 @@ const HomePage = () => {
     console.log(showImageModal);
     setSelectedFriend(null);
     setSelectedGroup(null);
+    navigate("/home");
   };
 
   const handleFriendClick = (friendId) => {
     setSelectedGroup(null);
-    if (selectedFriend === friendId) {
+    if (selectedFriend === friendId && location.pathname === '/home') {
       setFriendToRemove(friendId);
       setShowRemoveFriendModal(true);
       setModalOn(true);
     } else {
       setSelectedFriend(friendId);
     }
+    navigate("/home");
   };
 
   const handleGroupClick = (groupId) => {
-    if (selectedGroup === groupId) {
+    if (selectedGroup === groupId && location.pathname === '/home') {
       setGroupToRemove(groupId);
       setShowRemoveGroupModal(true);
     } else {
       setSelectedGroup(groupId);
       setSelectedFriend(null);
     }
+    
   };
 
   return (
@@ -188,6 +195,11 @@ const HomePage = () => {
         setReactionIndex={setReactionIndex}
         setShowEmojiModal={setShowEmojiModal}
         inputRef={inputRef}
+        userUsername={userUsername}
+        profileImage={profileImage}
+        createdAt = {createdAt}
+        userEmail = {userEmail}
+        page={page}
       />
 
       {/* Logout Button */}

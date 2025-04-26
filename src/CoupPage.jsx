@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import useFriends from "./componets/useFriends";
-import PlayersGameModal from "./componets/PlayersGameModal";
+import useFriends from "./componets/hooks/useFriends";
+import PlayersGameModal from "./componets/modals/PlayersGameModal";
  
 // Define Roles as constants
 const Role = {

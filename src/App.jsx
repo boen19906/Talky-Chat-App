@@ -35,10 +35,11 @@ function App() {
           {/* Redirect to HomePage if user is authenticated, otherwise to SignUpPage */}
           <Route
             path="/"
-            element={user ? <HomePage /> : <Navigate to="/signin" />}
+            element={user ? <HomePage page={"chat"} /> : <Navigate to="/signin" />}
           />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/home" element={<HomePage />} />
+          <Route path="/home" element={<HomePage page={"chat"} />} />
+          <Route path="/profile" element={<HomePage page={"profile"} />} />
           <Route path="/signup" element={<SignUpPage/>}/>
           <Route path="/coup" element={<CoupGame/>}/>
         </Routes>

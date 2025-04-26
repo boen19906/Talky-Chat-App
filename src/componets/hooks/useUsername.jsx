@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from "../firebase"; // Import auth from your firebase config
+import { db, auth } from "../../firebase"; // Import auth from your firebase config
 
 /**
  * Custom hook to fetch and manage usernames for given user IDs including current user
@@ -10,6 +10,9 @@ import { db, auth } from "../firebase"; // Import auth from your firebase config
  */
 const useUsername = () => {
   const [userUsername, setUserUsername] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState(null);
 
   // Get current user ID
@@ -25,6 +28,10 @@ const useUsername = () => {
                 
                 if (userDoc.exists()) {
                     setUserUsername(userDoc.data()?.username);
+                    setProfileImage(userDoc.data()?.profileImage);
+                    setCreatedAt(userDoc.data()?.createdAt?.toDate()); 
+                    setUserEmail(userDoc.data()?.email);
+                    
                 } else {
                     setError(`User document not found for ID: ${currentUserId}`);
                 }
@@ -46,7 +53,11 @@ const useUsername = () => {
 
 
   return {
-    userUsername
+    userUsername,
+    profileImage,
+    createdAt,
+    userEmail
+
   };
 };
 
