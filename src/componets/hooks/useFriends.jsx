@@ -6,6 +6,7 @@ import { auth, db } from "../../firebase";
 const useFriends = (setShowFriendRequestModal) => {
   const [friends, setFriends] = useState([]);
   const [friendUsernames, setFriendUsernames] = useState({});
+  const [friendProfileImages, setFriendProfileImages] = useState({});
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friendToRemove, setFriendToRemove] = useState(null);
   const [groupToRemove, setGroupToRemove] = useState(null);
@@ -47,6 +48,23 @@ const useFriends = (setShowFriendRequestModal) => {
   
       if (userDoc.exists()) {
         return userDoc.data().username || null;
+      } else {
+        console.error("User document not found.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching username:", error);
+      return null;
+    }
+  };
+
+  const getProfileImageById = async (userId) => {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        return userDoc.data().profileImage || null;
       } else {
         console.error("User document not found.");
         return null;
@@ -160,15 +178,21 @@ const useFriends = (setShowFriendRequestModal) => {
     if (friends.length > 0) {
       const fetchFriendUsernames = async () => {
         const usernames = {};
+        const profileImages = {};
         for (const friendId of friends) {
           const username = await getUsernameById(friendId);
+          const profileImage = await getProfileImageById(friendId);
           if (username) {
             usernames[friendId] = username;
           } else {
             console.error("Username not found for ID:", friendId);
           }
+          if (profileImage) {
+            profileImages[friendId] = profileImage;
+          }
         }
         setFriendUsernames(usernames);
+        setFriendProfileImages(profileImages);
       };
   
       fetchFriendUsernames();
@@ -524,6 +548,7 @@ const useFriends = (setShowFriendRequestModal) => {
   return {
     friends,
     friendUsernames,
+    friendProfileImages,
     selectedFriend,
     setSelectedFriend,
     selectedGroup,

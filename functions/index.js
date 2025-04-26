@@ -53,32 +53,32 @@ export const scheduledClearMessages = onSchedule({
 });
 
 export const scheduledClearStorage = onSchedule({
-    schedule: '0 0 * * *', 
-    timeZone: 'America/Los_Angeles',
-  }, async () => {
-    try {
-      const bucket = admin.storage().bucket();
-      const [files] = await bucket.getFiles({ prefix: 'chatImages/' });
-  
-      if (files.length === 0) {
-        logger.log('No images found in chatImages folder.');
-        return;
-      }
-  
-      // Delete files in batches of 100
-      const batchSize = 100;
-      let deletedCount = 0;
-  
-      for (let i = 0; i < files.length; i += batchSize) {
-        const batch = files.slice(i, i + batchSize);
-        await Promise.all(batch.map(file => file.delete()));
-        deletedCount += batch.length;
-        logger.log(`Deleted ${batch.length} images (total: ${deletedCount})`);
-      }
-  
-      logger.log(`Successfully deleted ${deletedCount} images total.`);
-    } catch (error) {
-      logger.error('Error deleting images:', error);
-      throw error;
+  schedule: '0 0 * * *', // Run at midnight Pacific Time every day
+  timeZone: 'America/Los_Angeles',
+}, async () => {
+  try {
+    const bucket = admin.storage().bucket();
+    const [files] = await bucket.getFiles({ prefix: 'chatFiles/' });
+
+    if (files.length === 0) {
+      logger.log('No files found in chatFiles folder.');
+      return;
     }
-  });
+
+    // Delete files in batches of 100
+    const batchSize = 100;
+    let deletedCount = 0;
+
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      await Promise.all(batch.map(file => file.delete()));
+      deletedCount += batch.length;
+      logger.log(`Deleted ${batch.length} files (total: ${deletedCount})`);
+    }
+
+    logger.log(`Successfully deleted ${deletedCount} files total from chatFiles folder.`);
+  } catch (error) {
+    logger.error('Error deleting files from chatFiles folder:', error);
+    throw error;
+  }
+});

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import MessageList from "./MessageArea";
 import MessageInput from "./MessageInput";
+import ProfilePage from "./ProfilePage";
 
 const ChatArea = ({
     selectedFriend,
@@ -8,6 +9,7 @@ const ChatArea = ({
     selectedGroupMembers,
     groupNames,
     friendUsernames,
+    friendProfileImages,
     messages,
     message,
     setMessage,
@@ -32,6 +34,7 @@ const ChatArea = ({
     inputRef,
     userUsername,
     profileImage,
+    setProfileImage,
     createdAt,
     userEmail,
     page
@@ -94,13 +97,16 @@ const ChatArea = ({
         return () => observer.disconnect();
     }, [messages]);
 
+
+    
+
     return (
        <>
        {page === "chat" && (
             <div className="chat-area">
             {selectedGroup ? (
                 <>
-                    <div className="chat-header">
+                    <div className="chat-header-group">
                         <h3>Chat with {groupNames[selectedGroup] || "Unknown Group"}</h3>
                         <div className="members-list">
                             Members: {selectedGroupMembers?.map((member, index) => (
@@ -149,8 +155,23 @@ const ChatArea = ({
             ) : selectedFriend ? (
                 <>
                     <div className="chat-header">
-                        <h3>Chat with {friendUsernames[selectedFriend] || "Unknown"}</h3>
-                    </div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {friendProfileImages[selectedFriend] ? (
+                            <img 
+                                src={friendProfileImages[selectedFriend]} 
+                                alt={`${friendUsernames[selectedFriend]}'s profile`} 
+                                className="friend-profile-image"
+                                style={{ marginRight: '12px' }}
+                            />
+                            ) : (
+                            <div className="friend-profile-placeholder" style={{ marginRight: '12px' }}>
+                                {friendUsernames[selectedFriend] ? 
+                                friendUsernames[selectedFriend].charAt(0).toUpperCase() : "?"}
+                            </div>
+                            )}
+                            <h3>Chat with {friendUsernames[selectedFriend] || "Unknown"}</h3>
+                        </div>
+                        </div>
                     <div
                         ref={chatMessagesRef}
                         className="chat-messages overflow-y-auto max-h-[calc(100vh-200px)]"
@@ -215,39 +236,14 @@ const ChatArea = ({
        )}
 
     {page === "profile" && (
-    <div className="profile-area">
-        <h3>Profile</h3>
-        {profileImage ? (
-        <img 
-            src={profileImage} 
-            alt="Profile" 
-            className="profile-image"
+        <ProfilePage
+            page={page}
+            profileImage={profileImage} 
+            setProfileImage={setProfileImage}
+            userUsername={userUsername}
+            userEmail={userEmail}
+            createdAt = {createdAt}
         />
-        ) : (
-        <div className="profile-placeholder">
-            {userUsername ? userUsername.charAt(0).toUpperCase() : "U"}
-        </div>
-        )}
-        <h3 className="profile-username">{userUsername}</h3>
-        <div className="profile-content">
-        <div className="user-detail">
-            <span className="detail-label">Email</span>
-            <span className="detail-value">{userEmail}</span>
-        </div>
-        <div className="user-detail">
-            <span className="detail-label">Member since</span>
-            <span className="detail-value">
-                <span className="account-age">
-                    {new Date(createdAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    })}
-                </span>
-            </span>
-        </div>
-        </div>
-    </div>
     )}
         
        </>

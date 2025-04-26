@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../firebase"; // Import auth from your firebase config
 
 /**
- * Custom hook to fetch and manage usernames for given user IDs including current user
- * @param {Array} userIds - Array of user IDs to fetch usernames for
- * @param {boolean} includeCurrentUser - Whether to include current user's username
- * @returns {Object} An object containing usernames map, loading state, and utility functions
+ * Custom hook to fetch and manage user information with real-time updates
+ * @returns {Object} An object containing user information and utility functions
  */
 const useUsername = () => {
   const [userUsername, setUserUsername] = useState("");
@@ -14,50 +12,66 @@ const useUsername = () => {
   const [createdAt, setCreatedAt] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Get current user ID
   const currentUserId = auth.currentUser?.uid;
 
-  // Helper function to fetch username by user ID
   useEffect(() => {
-    const getUsername = async () => {
-        if (currentUserId) {
-            try {
-                const userDocRef = doc(db, "users", currentUserId);
-                const userDoc = await getDoc(userDocRef);
-                
-                if (userDoc.exists()) {
-                    setUserUsername(userDoc.data()?.username);
-                    setProfileImage(userDoc.data()?.profileImage);
-                    setCreatedAt(userDoc.data()?.createdAt?.toDate()); 
-                    setUserEmail(userDoc.data()?.email);
-                    
-                } else {
-                    setError(`User document not found for ID: ${currentUserId}`);
-                }
-            } catch (error) {
-                setError(`Error fetching username: ${error.message}`);
-            }
+    if (!currentUserId) {
+      setLoading(false);
+      return;
+    }
+
+    // Set up real-time listener
+    const userDocRef = doc(db, "users", currentUserId);
+    
+    // This creates a subscription that will update whenever the document changes
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          setUserUsername(userData?.username || "");
+          setProfileImage(userData?.profileImage || "");
+          
+          // Handle Firestore timestamp
+          if (userData?.createdAt) {
+            // Convert Firestore timestamp to JavaScript Date
+            setCreatedAt(userData.createdAt.toDate ? userData.createdAt.toDate() : userData.createdAt);
+          }
+          
+          setUserEmail(userData?.email || "");
+          setError(null);
+        } else {
+          setError(`User document not found for ID: ${currentUserId}`);
         }
-    };
+        setLoading(false);
+      },
+      (err) => {
+        setError(`Error fetching user data: ${err.message}`);
+        setLoading(false);
+      }
+    );
 
-    getUsername();
-}, [currentUserId]); // Dependency array ensures this runs when currentUserId changes
+    // Cleanup function to unsubscribe when the component unmounts
+    // or when currentUserId changes
+    return () => unsubscribe();
+  }, [currentUserId]);
 
-
-
-  
-
-  
-
-
+  // Function to manually update profile image in the local state
+  const updateProfileImage = (newImageUrl) => {
+    setProfileImage(newImageUrl);
+  };
 
   return {
     userUsername,
     profileImage,
+    setProfileImage: updateProfileImage,
     createdAt,
-    userEmail
-
+    userEmail,
+    loading,
+    error
   };
 };
 

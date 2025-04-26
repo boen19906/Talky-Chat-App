@@ -164,7 +164,7 @@
   border: none;
   padding: 12px 24px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 1000;
   color: #718096; /* Default text color */
   cursor: pointer;
   position: relative;
@@ -182,7 +182,7 @@
 /* Active tab state */
 .tab-navigation button.active {
   color: #3182ce;
-  font-weight: 600;
+  font-weight: 1000;
 }
 
 /* Animated underline for active tab */
@@ -252,7 +252,7 @@
     display: flex;
     flex-direction: column;
     width: 33.33%;
-    background-color: #515355;
+    background: linear-gradient(to bottom right, orange, blue);
     color: white;
     padding: 20px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -283,7 +283,7 @@
   position: relative;
 }
 .friend-list-item.selected {
-
+  background-color:#3182ce;
   color: white; /* White text for better contrast */
   border: 0.1rem solid #007bff; /* Adds a 1rem solid blue border */
 
@@ -433,9 +433,41 @@
     display: inline-block;
     transform: rotate(90deg);
   }
-  /*Chat header*/
   .chat-header {
+    margin-top: 2vh;
+    display: flex;
+    justify-content: center;
+  }
+
+  .chat-header-group {
     margin-top:2vh;
+  }
+  
+  .chat-header-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .friend-profile-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+  }
+  
+  .friend-profile-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    margin-right: 12px;
   }
   
   /* Chat Input */
@@ -1304,7 +1336,7 @@
 
 /* Main profile container */
 .profile-area {
-  width:500px;
+  width: 400px;
   margin: 0 auto;
   padding: 20px;
   background-color: #fff;
@@ -1319,20 +1351,34 @@
   color: #333;
 }
 
-/* Profile image styles */
-.profile-image {
+/* Profile image container with hover effects */
+.profile-image-container {
+  position: relative;
   width: 120px;
   height: 120px;
+  margin: 0 auto 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.profile-image-container:hover {
+  transform: scale(1.05);
+}
+
+/* Profile image styles */
+.profile-image {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #3498db;
-  margin: 0 auto 15px;
 }
 
 /* Placeholder for when there's no profile image */
 .profile-placeholder {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background-color: #3498db;
   color: white;
@@ -1340,8 +1386,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 15px;
   font-weight: bold;
+  border: 3px solid #3498db;
+}
+
+/* Edit overlay that appears on hover */
+.edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+/* Pencil icon */
+.pencil-icon {
+  width: 30px;
+  height: 30px;
+  color: white;
+}
+
+/* Hide the file input */
+.file-input {
+  display: none;
+}
+
+/* Loading state for image */
+.uploading {
+  opacity: 0.7;
 }
 
 /* Username display */

@@ -73,7 +73,11 @@ const FriendsList = ({
             className={activeTab === "friends" ? "active" : ""}
             onClick={() => setActiveTab("friends")}
           >
-            <span>Friends ({friends.length})</span>
+            <span style={{ fontWeight: 900 }}>
+              Friends ({friends.length})
+            </span>
+
+
             {totalFriendsUnread > 0 && (
               <div className="new-message-indicator tab-indicator">{totalFriendsUnread}</div>
             )}
