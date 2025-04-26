@@ -80,24 +80,33 @@ const MessageList = ({ messages, setShowDeleteMessageModal, setDeletedMessageInd
                     onClick={() => {setSelectedImage(msg.fileUrl); setShowImageModal(true);}}
                   />
                 ) : (
-                  <div className="file-preview" style={{ 
+                  <div className="file-preview" 
+                  onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
+                  style={{ 
                     display: "flex", 
                     alignItems: "center", 
                     padding: "10px",
                     background: "rgba(0,0,0,0.05)",
                     borderRadius: "6px",
-                    margin: "5px 0"
+                    margin: "5px 0",
+                    cursor: "pointer"
                   }}>
-                    <FaFile size={24} style={{ marginRight: "10px" }} />
-                    <span className="file-name" style={{ 
-                      flexGrow: 1,
-                      color: !isUser ? textColor : undefined,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
-                    }}>
+                    <FaFile size={60} style={{ marginRight: "10px" }} />
+                    <span
+                      className="file-name"
+                      style={{ 
+                        flexGrow: 1,
+                        flexShrink: 1,
+                        flexBasis: "500%", // Allows it to grow more
+                        minWidth: "0", // Ensures shrinking can happen
+                        maxWidth: "100%", // Prevents overflowing outside parent
+                        color: !isUser ? textColor : undefined,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
                       {msg.fileName || "File"}
                     </span>
+
                     <button 
                       onClick={() => handleDownload(msg.fileUrl, msg.fileName)}
                       style={{

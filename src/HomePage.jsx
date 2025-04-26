@@ -64,7 +64,12 @@ const HomePage = () => {
     deletedMessageIndex,
     userUsername
   );
-  const { unreadMessages, setUnreadMessages } = useUnreadMessages(friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef);
+  const { 
+    unreadMessages, 
+    setUnreadMessages,
+    groupUnreadMessages,
+    setGroupUnreadMessages
+  } = useUnreadMessages(friends, selectedFriend, groups, selectedGroup, isNewLogin, audioRef);
 
 
   useEffect(() => {
@@ -148,6 +153,8 @@ const HomePage = () => {
         friendToTop={friendToTop}
         setFriendToTop={setFriendToTop}
         setModalOn={setModalOn}
+        groupUnreadMessages={groupUnreadMessages}
+        setGroupUnreadMessages={setGroupUnreadMessages}
         
       />
       

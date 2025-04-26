@@ -40,6 +40,7 @@ const useMessages = (selectedFriend, selectedGroup, friendUsernames, deletedMess
   }, [selectedFriend, selectedGroup]);
 
   // Mark messages as viewed and reorder friends when a friend is selected
+// For direct messages
 useEffect(() => {
   const markMessagesAsViewed = async () => {
     const user = auth.currentUser;
@@ -54,11 +55,19 @@ useEffect(() => {
           const textsArray = conversationDoc.data().texts || [];
           let updated = false;
           
-          // Create a new array with viewed status updated
+          // Create a new array with readBy status updated
           const updatedTexts = textsArray.map(msg => {
-            if (msg.sender === selectedFriend && !msg.viewed) {
+            // Initialize readBy if it doesn't exist
+            const readBy = msg.readBy || [];
+            
+            // If current user hasn't read this message yet
+            if (msg.sender === selectedFriend && !readBy.includes(user.uid)) {
               updated = true;
-              return { ...msg, viewed: true };
+              return { 
+                ...msg, 
+                viewed: true, // Keep for backward compatibility
+                readBy: [...readBy, user.uid] // Add current user to readBy array
+              };
             }
             return msg;
           });
@@ -85,8 +94,6 @@ useEffect(() => {
                   
                   // Update Firestore
                   await updateDoc(userRef, { friends: newFriends });
-
-                  
                 }
               }
             }
@@ -100,6 +107,70 @@ useEffect(() => {
   
   markMessagesAsViewed();
 }, [selectedFriend, messages]);
+
+// For group messages
+useEffect(() => {
+  const markGroupMessagesAsViewed = async () => {
+    const user = auth.currentUser;
+    if (user && selectedGroup) {
+      const groupRef = doc(db, "messages", selectedGroup);
+      
+      try {
+        const groupDoc = await getDoc(groupRef);
+        
+        if (groupDoc.exists()) {
+          const textsArray = groupDoc.data().texts || [];
+          let updated = false;
+          
+          // Create a new array with readBy status updated
+          const updatedTexts = textsArray.map(msg => {
+            // Initialize readBy if it doesn't exist
+            const readBy = msg.readBy || [];
+            
+            // If current user hasn't read this message yet and they're not the sender
+            if (msg.sender !== user.uid && !readBy.includes(user.uid)) {
+              updated = true;
+              return { 
+                ...msg,
+                readBy: [...readBy, user.uid] // Add current user to readBy array
+              };
+            }
+            return msg;
+          });
+          
+          if (updated) {
+            // Update messages first
+            await updateDoc(groupRef, { texts: updatedTexts });
+
+            // Now update groups order
+            const userRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            if (userDoc.exists()) {
+              const currentGroups = userDoc.data().groups || [];
+              
+              // Only update if group exists and isn't already at the end
+              if (currentGroups.includes(selectedGroup)) {
+                if (currentGroups[currentGroups.length - 1] !== selectedGroup) {
+                  // Create new array with group at end
+                  const filteredGroups = currentGroups.filter(id => id !== selectedGroup);
+                  const newGroups = [...filteredGroups, selectedGroup];
+                  
+                  // Update Firestore
+                  await updateDoc(userRef, { groups: newGroups });
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error processing group messages:", error);
+      }
+    }
+  };
+  
+  markGroupMessagesAsViewed();
+}, [selectedGroup, messages]);
 
   // useEffect to fetch messages for either selectedFriend or selectedGroup
   useEffect(() => {

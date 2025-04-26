@@ -109,6 +109,7 @@
 }
 /* Tab Navigation */
 .tab-navigation {
+  position: relative;
   display: flex;
   border-bottom: 2px solid #e2e8f0; /* Subtle border below tabs */
   margin-bottom: 20px;
@@ -126,6 +127,7 @@
   position: relative;
   transition: all 0.3s ease;
   outline: none;
+  align-items: center;
 }
 
 /* Hover state */
@@ -256,6 +258,20 @@
   border-radius: 50%;
   background-color: red;
 }
+
+.new-message-indicator.tab-indicator {
+  position: absolute;
+  top: -5px;
+  right: 10px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+}
   
   /* Chat Area */
   .chat-area {
@@ -283,7 +299,6 @@
     padding: 10px;
     border-radius: 4px;
     min-width: 15vw;
-    max-width:25vw;
     word-wrap: break-word; /* Allows long words to wrap */
     
   }
@@ -1210,7 +1225,6 @@
   padding: 8px 12px;
   background-color: #f0f0f0;
   border-radius: 8px;
-  max-width: 300px;
 }
 
 .file-name {
